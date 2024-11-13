@@ -98,23 +98,25 @@ class CourseViewModel : ViewModel() {
             }
         }
     }
-    suspend fun enrollInCourse( context: Context,courseId: String) {
-        try {
-            val authToken = getAuthToken(context)
-            val response = ApiClient.getInstance(authToken).enrollCourse(courseId)
-            if (response.isSuccessful) {
-                val enrollResponse = response.body()
-                if (enrollResponse != null && enrollResponse.success) {
-                    println("Enrollment Successful: ${enrollResponse.message}")
-                } else {
-                    println("Enrollment failed: ${response.errorBody()?.string()}")
-                }
-            } else {
-                println("API Error: ${response.errorBody()?.string()}")
-            }
-        } catch (e: Exception) {
-            println("Exception: ${e.message}")
-        }
+     fun enrollInCourse( context: Context,courseId: String) {
+         viewModelScope.launch {
+             try {
+                 val authToken = getAuthToken(context)
+                 val response = ApiClient.getInstance(authToken).enrollCourse(courseId)
+                 if (response.isSuccessful) {
+                     val enrollResponse = response.body()
+                     if (enrollResponse != null && enrollResponse.success) {
+                         println("Enrollment Successful: ${enrollResponse.message}")
+                     } else {
+                         println("Enrollment failed: ${response.errorBody()?.string()}")
+                     }
+                 } else {
+                     println("API Error: ${response.errorBody()?.string()}")
+                 }
+             } catch (e: Exception) {
+                 println("Exception: ${e.message}")
+             }
+         }
     }
 
 }

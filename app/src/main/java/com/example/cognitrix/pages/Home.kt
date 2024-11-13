@@ -154,7 +154,8 @@ class Home {
                             .padding()
                             .fillMaxSize(),
                         courseViewModel,
-                        navController
+                        navController,
+                        context = context,
                     )
 
                     1 -> {
@@ -173,7 +174,8 @@ class Home {
     fun HomeScreen(
         modifier: Modifier,
         courseViewModel: CourseViewModel,
-        navController: NavHostController
+        navController: NavHostController,
+        context: Context
     ) {
         Column(modifier = modifier) {
             val dataload = courseViewModel.isLoading.observeAsState()
@@ -224,38 +226,17 @@ class Home {
                             instructor = data.creator.fullName,
                             studentCount = data.numEnrolledStudents,
                             progress = data.progress?.toFloat(),
-                            enroll = false,
-                            onClick = { navController.navigate("video") }
+                            enroll = true,
+                            onClick = { navController.navigate("video") },
+                            Onenroll = {
+                                courseViewModel.enrollInCourse(context, data._id)
+                                courseViewModel.fetchOngoingCourses(context)
+                                courseViewModel.fetchRemainingCourses(context)
+
+                            }
                         )
                     }
                 }
-//                    // Filter the available courses in one iteration
-//                    val availableCourses = allCourseDataclass.value?.filter { data ->
-//                        data._id !in (courses.value?.map { it._id } ?: emptyList())
-//                    }.orEmpty()
-//
-//// Show "Available Course" text only if there are available courses
-//                    if (availableCourses.isNotEmpty()) {
-//                        Text(
-//                            text = "Available Course",
-//                            color = Color.Gray,
-//                            fontWeight = FontWeight.Bold,
-//                            fontSize = 25.sp,
-//                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
-//                        )
-//
-//                        // Render the filtered list of available courses
-//                        availableCourses.forEach { data ->
-//                            CourseCard(
-//                                courseTitle = data.title,
-//                                instructor = data.creator.fullName,
-//                                studentCount = data.numEnrolledStudents,
-//                                enroll = true,
-//                                progress = null
-//                            )
-//                        }
-//                    }
-
             }
         }
     }
@@ -268,7 +249,8 @@ class Home {
         studentCount: Int,
         progress: Float?,
         enroll: Boolean?,
-        onClick: () -> Unit = {}
+        onClick: () -> Unit = {},
+        Onenroll: () -> Unit = {}
     ) {
         Card(
             modifier = Modifier
@@ -325,6 +307,18 @@ class Home {
 
                     Spacer(modifier = Modifier.width(16.dp))
                     Box(contentAlignment = Alignment.Center) {
+                        if (enroll == true) {
+                            Button(
+                                onClick = {
+                                    Onenroll()
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(
+                                        0xFF37ADA6
+                                    )
+                                ),
+                            ) { Text(text = "Enroll") }
+                        }
                         progress?.let {
                             CircularProgressIndicator(
                                 progress = { it / 100 },

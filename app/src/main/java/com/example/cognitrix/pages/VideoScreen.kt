@@ -29,35 +29,7 @@ class VideoScreen : ComponentActivity() {
 
 @Composable
 fun YouTubeVideoScreen(videoId: String) {
-    val youTubePlayer = remember { mutableStateOf<YouTubePlayer?>(null) }
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
-    AndroidView(
-        factory = { context ->
-            YouTubePlayerView(context).apply {
-                addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
-                    override fun onReady(initializedYouTubePlayer: YouTubePlayer) {
-                        // Store the initialized YouTubePlayer in the remember state
-                        youTubePlayer.value = initializedYouTubePlayer
-                        initializedYouTubePlayer.loadVideo(videoId, 0f)
-                    }
-                })
-
-                // Handle lifecycle events to release the player
-                lifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
-                    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                        when (event) {
-                            Lifecycle.Event.ON_PAUSE -> youTubePlayer.value?.pause()
-                            Lifecycle.Event.ON_RESUME -> youTubePlayer.value?.play()
-                            Lifecycle.Event.ON_DESTROY -> release()
-                            else -> {}
-                        }
-                    }
-                })
-            }
-        },
-        modifier = Modifier.fillMaxSize()
-    )
 }
 @Preview(showBackground = true)
 @Composable
