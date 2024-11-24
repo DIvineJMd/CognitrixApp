@@ -1,8 +1,10 @@
 package com.example.cognitrix.api.login
 
 import com.example.cognitrix.api.Dataload.AllCourseDataclass
+import com.example.cognitrix.api.Dataload.CourseDetailsResponse
 import com.example.cognitrix.api.Dataload.CourseResponse
 import com.example.cognitrix.api.Dataload.EnrollCourseResponse
+import com.example.cognitrix.api.Dataload.VideoDetailsResponse
 import okhttp3.OkHttpClient
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -31,6 +33,13 @@ interface ApiService {
 
     @PATCH("api/course/enroll/{courseId}")
     suspend fun enrollCourse(@Path("courseId") courseId: String): Response<EnrollCourseResponse>
+
+    @GET("api/course/{courseID}")
+    suspend fun getCourseDetails(@Path("courseID") courseID: String): Response<CourseDetailsResponse>
+
+    @GET("api/video/{videoId}")
+    suspend fun getVideoDetails(@Path("videoId") videoId: String): Response<VideoDetailsResponse>
+
 }
 
 object ApiClient {

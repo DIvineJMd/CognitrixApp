@@ -13,13 +13,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.cognitrix.api.Dataload.CourseViewModel
+import com.example.cognitrix.pages.CoursePage
 import com.example.cognitrix.pages.Home
 import com.example.cognitrix.pages.LoginPage
-import com.example.cognitrix.pages.VideoScreen
 import com.example.cognitrix.ui.theme.CognitrixTheme
 
 class MainActivity : ComponentActivity() {
@@ -55,8 +57,17 @@ class MainActivity : ComponentActivity() {
                         composable("signup") {
                             SignUpPage(navController)
                         }
-                        composable("video") {
-                            VideoScreen() // Add the VideoScreen composable
+                        composable(
+                            route = "Lecture/{courseId}",
+                            arguments = listOf(navArgument("courseId") {
+                                type = NavType.StringType
+                            })
+                        ) { backStackEntry ->
+                            val courseId = backStackEntry.arguments?.getString("courseId")
+
+                            if (courseId != null) {
+                                CoursePage().CourseScreen(courseViewmodel, applicationContext, courseId)
+                            }
                         }
 
                     }

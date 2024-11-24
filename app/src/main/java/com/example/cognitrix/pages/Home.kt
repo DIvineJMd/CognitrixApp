@@ -203,6 +203,9 @@ class Home {
                     ongoingCourses.forEach { data ->
                         CourseCard(
                             courseTitle = data.title,
+                            onClick = {
+                                navController.navigate("Lecture/${data._id}")
+                            },
                             instructor = data.creator.fullName,
                             studentCount = data.numEnrolledStudents,
                             progress = data.progress?.toFloat(),
