@@ -12,23 +12,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -159,11 +153,25 @@ class Home {
                     )
 
                     1 -> {
-                        Text(text = "leader")
+                        Leaderboard.LeaderboardScreen(
+                            Modifier
+                                .padding()
+                                .fillMaxSize(),
+                            courseViewModel,
+                            navController,
+                            context = context,
+                        )
                     }
 
                     2 -> {
-                        Text(text = "profile")
+                        Profile.ProfileScreen(
+                            Modifier
+                                .padding()
+                                .fillMaxSize(),
+                            courseViewModel,
+                            navController,
+                            context = context,
+                        )
                     }
                 }
             }
@@ -244,7 +252,6 @@ class Home {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun CourseCard(
         courseTitle: String,
