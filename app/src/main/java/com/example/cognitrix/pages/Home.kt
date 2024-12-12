@@ -2,6 +2,7 @@ package com.example.cognitrix.pages
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.provider.ContactsContract
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,7 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.ExitToApp
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
@@ -121,15 +123,14 @@ class Home {
                     actions = {
                         IconButton(onClick = { /* Bell click */ }) {
                             Icon(
-                                Icons.Default.Notifications,
+                                Icons.Outlined.Notifications,
                                 contentDescription = "Bell",
                                 tint = Color.White
                             )
                         }
                         IconButton(onClick = { /* Logout click */ }) {
                             Icon(
-                                modifier = Modifier.size(25.dp),
-                                painter = painterResource(id = R.drawable.exit),
+                                Icons.Outlined.ExitToApp,
                                 contentDescription = "logout",
                                 tint = Color.White
                             )

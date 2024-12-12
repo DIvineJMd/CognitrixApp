@@ -2,24 +2,46 @@ package com.example.cognitrix.pages
 
 import android.annotation.SuppressLint
 import android.content.Context
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.cognitrix.api.Dataload.CourseViewModel
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 
 class Leaderboard {
     companion object {
+        @OptIn(ExperimentalMaterial3Api::class)
         @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+        @Composable
+        fun DisplayRecords(
+            records: List<Triple<String, String, Int>>,
+            onRecordClick: (Triple<String, String, Int>) -> Unit
+        ) {
+            records.forEach { (rank, name, coins) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onRecordClick(Triple(rank, name, coins)) }
+                ) {
+                    Text(text = rank, modifier = Modifier.weight(1f).padding(8.dp))
+                    Text(text = name, modifier = Modifier.weight(3f).padding(8.dp))
+                    Text(text = coins.toString(), modifier = Modifier.weight(1f).padding(8.dp))
+                }
+            }
+        }
+
         @Composable
         fun LeaderboardScreen(
             modifier: Modifier,
@@ -27,79 +49,70 @@ class Leaderboard {
             navController: NavHostController,
             context: Context
         ) {
-            var showDialog by remember { mutableStateOf(false) }
-            var selectedRecord by remember { mutableStateOf<Pair<String, String>?>(null) }
+            // Define state variables
+            val selectedRecord = remember { mutableStateOf<Triple<String, String, Int>?>(null) }
+            val showDialog = remember { mutableStateOf(false) }
 
             Column(modifier = modifier.padding(16.dp)) {
-                // Table Headings in Boxes
-                Row(modifier = Modifier.fillMaxWidth()) {
+                // Table Headings
+                Row(modifier = Modifier.fillMaxWidth().border(1.dp, Color.Black).padding(8.dp)) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(4.dp)
-                            .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(4.dp))
                             .padding(8.dp)
                     ) {
-                        Text(text = "Rank", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "Rank", fontWeight = FontWeight.Bold)
                     }
                     Box(
                         modifier = Modifier
                             .weight(3f)
-                            .padding(4.dp)
-                            .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(4.dp))
                             .padding(8.dp)
                     ) {
-                        Text(text = "Name", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "Name", fontWeight = FontWeight.Bold)
                     }
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(4.dp)
-                            .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(4.dp))
                             .padding(8.dp)
                     ) {
-                        Text(text = "Coins", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "Coins", fontWeight = FontWeight.Bold)
                     }
                 }
 
-                // Sample Data (Replace with actual data from your ViewModel)
                 val sampleData = listOf(
-                    Pair("1", "Alice"),
-                    Pair("2", "Bob"),
-                    Pair("3", "Charlie")
+                    Triple("1", "Alice", 100),
+                    Triple("2", "Bob", 200),
+                    Triple("3", "Charlie", 150)
                 )
 
                 // Displaying Sample Data
-                sampleData.forEach { (rank, name) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                selectedRecord = Pair(rank, name)
-                                showDialog = true
-                            }
-                    ) {
-                        Text(text = rank, modifier = Modifier.weight(1f).padding(8.dp))
-                        Text(text = name, modifier = Modifier.weight(3f).padding(8.dp))
-                        Text(text = "100", modifier = Modifier.weight(1f).padding(8.dp)) // Sample coins
-                    }
+                DisplayRecords(sampleData) { record ->
+                    selectedRecord.value = record
+                    showDialog.value = true
                 }
-            }
 
-            // Popup Dialog
-            if (showDialog && selectedRecord != null) {
-                AlertDialog(
-                    onDismissRequest = { showDialog = false },
-                    title = { Text(text = "Record Details") },
-                    text = {
-                        Text(text = "Rank: ${selectedRecord!!.first}\nName: ${selectedRecord!!.second}\nCoins: 100")
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { showDialog = false }) {
-                            Text("OK")
+                // Show dialog if needed
+                if (showDialog.value) {
+                    // Details Dialog
+                    AlertDialog(
+                        onDismissRequest = { showDialog.value = false },
+                        title = { Text("Details") },
+                        text = {
+                            Column {
+                                Text("Rank: 1")
+                                Text("Name: Rahul Malhotra")
+                                Text("Coins: 186")
+                                Text("Badges: ")
+                                Text("Courses Done: 2")
+                            }
+                        },
+                        confirmButton = {
+                            Button(onClick = { showDialog.value = false }) {
+                                Text("OK")
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
