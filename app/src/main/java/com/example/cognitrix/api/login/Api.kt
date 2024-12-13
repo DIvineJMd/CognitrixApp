@@ -4,6 +4,7 @@ import com.example.cognitrix.api.Dataload.AllCourseDataclass
 import com.example.cognitrix.api.Dataload.CourseDetailsResponse
 import com.example.cognitrix.api.Dataload.CourseResponse
 import com.example.cognitrix.api.Dataload.EnrollCourseResponse
+import com.example.cognitrix.api.Dataload.RecommendationsResponse
 import com.example.cognitrix.api.Dataload.VideoDetailsResponse
 import okhttp3.OkHttpClient
 import retrofit2.http.Body
@@ -15,6 +16,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
     @POST("api/auth/login")
@@ -39,7 +41,12 @@ interface ApiService {
 
     @GET("api/video/{videoId}")
     suspend fun getVideoDetails(@Path("videoId") videoId: String): Response<VideoDetailsResponse>
-
+    @GET("api/video/{videoId}/recommendations")
+    suspend fun getRecommendations(
+        @Path("videoId") videoId: String,
+        @Query("items") pageSize: Int,
+        @Query("offset") offset: Int
+    ): Response<RecommendationsResponse>
 }
 
 object ApiClient {

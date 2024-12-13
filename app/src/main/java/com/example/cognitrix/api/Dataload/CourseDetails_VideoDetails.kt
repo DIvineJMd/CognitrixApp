@@ -45,3 +45,14 @@ data class NextVideo(
     @SerializedName("title") val title: String,
     @SerializedName("url") val url: String
 )
+data class RecommendationsResponse(
+    val success: Boolean,
+    val relatedVideos: List<RecommendationVideo>
+)
+data class RecommendationVideo(
+    val _id: String,
+    val title: String,
+    val url: String,
+    val course: String,
+    val watched: Boolean
+)

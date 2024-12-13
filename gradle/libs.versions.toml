@@ -1,6 +1,8 @@
 [versions]
 accompanistPager = "0.28.0"
 agp = "8.7.3"
+coilCompose = "3.0.4"
+coilVideo = "2.7.0"
 converterGson = "2.9.0"
 core = "12.0.0"
 json = "20210307"
@@ -20,12 +22,15 @@ runtimeLivedata = "1.7.5"
 youtubeAndroidPlayerApi = "1.2.2"
 playServicesLocation = "21.3.0"
 playServicesGames = "23.2.0"
+volley = "1.2.1"
 
 [libraries]
 accompanist-pager = { module = "com.google.accompanist:accompanist-pager", version.ref = "accompanistPager" }
 accompanist-pager-indicators = { module = "com.google.accompanist:accompanist-pager-indicators", version.ref = "accompanistPager" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeCompose" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
+coil-video = { module = "io.coil-kt:coil-video", version.ref = "coilVideo" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 core = { module = "com.pierfrancescosoffritti.androidyoutubeplayer:core", version.ref = "core" }
 json = { module = "org.json:json", version.ref = "json" }
@@ -50,6 +55,7 @@ androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtim
 youtube-android-player-api = { module = "com.google.android.youtube:youtube-android-player-api", version.ref = "youtubeAndroidPlayerApi" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 play-services-games = { group = "com.google.android.gms", name = "play-services-games", version.ref = "playServicesGames" }
+volley = { group = "com.android.volley", name = "volley", version.ref = "volley" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

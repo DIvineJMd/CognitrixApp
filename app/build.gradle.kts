@@ -42,6 +42,7 @@ android {
 dependencies {
     implementation( libs.accompanist.pager)
     implementation (libs.accompanist.pager.indicators)
+    implementation("io.coil-kt:coil-compose:2.0.0")
 
     implementation (libs.retrofit)
     implementation (libs.converter.gson)
@@ -60,6 +61,7 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.play.services.location)
     implementation(libs.play.services.games)
+    implementation(libs.volley)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

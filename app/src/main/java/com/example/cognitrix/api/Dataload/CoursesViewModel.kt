@@ -1,6 +1,10 @@
 package com.example.cognitrix.api.Dataload
 
 import android.content.Context
+import android.util.Log
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -71,6 +75,7 @@ class CourseViewModel : ViewModel() {
                     if (response.isSuccessful && response.body()?.success == true) {
                         _courseDetails.postValue(Resource.Success(response.body()))
                         fetchVideoDetails(context, response.body()!!.videos.values.first()[0].id)
+//                        println("======>"+response.body()!!.videos)
                     } else {
                         _courseDetails.postValue(Resource.Error("Error fetching course details: ${response.message()}"))
                         println("Error fetching course details: ${response.message()}")
@@ -171,5 +176,55 @@ class CourseViewModel : ViewModel() {
              }
          }
     }
+//    =========================================================================
+private val _relatedVideos = MutableLiveData<List<RecommendationVideo>>(emptyList())
+    val relatedVideos: LiveData<List<RecommendationVideo>> = _relatedVideos
 
+    private val _isLoadingRVideo = MutableLiveData(false)
+    val isLoadingRvideo: LiveData<Boolean> = _isLoading
+
+    private var currentOffset = 0
+    private val pageSize = 10
+    private var hasMoreItems = true
+
+    fun loadRecommendations(videoId: String, context: Context) {
+        // Prevent multiple simultaneous loading or when no more items
+        if (_isLoading.value == true || !hasMoreItems) return
+
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context)
+                val response = ApiClient.getInstance(authToken)
+                    .getRecommendations(videoId, pageSize, currentOffset)
+
+                if (response.isSuccessful) {
+                    response.body()?.let {
+                        if (it.success) {
+                            val newVideos = it.relatedVideos
+
+                            // Update list
+                            val currentList = _relatedVideos.value.orEmpty()
+                            _relatedVideos.value = currentList + newVideos
+
+                            // Update pagination
+                            currentOffset += pageSize
+                            hasMoreItems = newVideos.size == pageSize
+                        } else {
+                            hasMoreItems = false
+                        }
+                    }
+                } else {
+                    // Handle API error
+                    hasMoreItems = false
+                }
+            } catch (e: Exception) {
+                // Handle network or other exceptions
+                hasMoreItems = false
+                Log.e("RecommendationsLoad", "Error loading recommendations", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
 }
