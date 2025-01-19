@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,6 +55,7 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import kotlinx.coroutines.launch
+import org.w3c.dom.Text
 
 class CoursePage {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -123,7 +125,7 @@ class CoursePage {
             ) {
                 when (videoData) {
                     is Resource.Loading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally).padding(top=50.dp))
                     }
 
                     is Resource.Error -> {
@@ -132,17 +134,16 @@ class CoursePage {
 
                     is Resource.Success -> {
                         val data = (videoData as Resource.Success<VideoDetail>).data
-                        videoid=data.url.substringAfter("youtu.be/")
+                        videoid = data.url.substringAfter("youtu.be/")
                         AndroidView(
                             factory = { context ->
                                 YouTubePlayerView(context).apply {
                                     enableAutomaticInitialization = false
-                                    println("======>$videoid")
+
                                     addYouTubePlayerListener(object :
                                         AbstractYouTubePlayerListener() {
                                         override fun onReady(initializedYouTubePlayer: YouTubePlayer) {
                                             youTubePlayer.value = initializedYouTubePlayer
-//                                            println(data.url.substringAfter("/"))
                                             initializedYouTubePlayer.loadVideo(
                                                 videoid, 0f
                                             )
@@ -168,14 +169,14 @@ class CoursePage {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(if (isLandscape) 275.dp else 200.dp)
-                                .padding(0.dp)
+                                .padding(top=25.dp)
                                 .clip(RoundedCornerShape(5.dp))
                         )
 
                         if (!isLandscape) {
                             Text(
                                 text = data.title,
-                                modifier = Modifier.padding(top=25.dp, start = 5.dp),
+                                modifier = Modifier.padding(top = 30.dp, start = 5.dp),
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
                             )
@@ -189,7 +190,12 @@ class CoursePage {
                                     .fillMaxWidth()
                                     .padding(5.dp),
                                 onClick = {
-                                    (videoData as Resource.Success<VideoDetail>).data.nextVideo?.let { it1 -> viewModel.fetchVideoDetails(context, it1.id) }
+                                    (videoData as Resource.Success<VideoDetail>).data.nextVideo?.let { it1 ->
+                                        viewModel.fetchVideoDetails(
+                                            context,
+                                            it1.id
+                                        )
+                                    }
                                 }
                             ) {
                                 Text(text = "Next Video")
@@ -203,46 +209,46 @@ class CoursePage {
                                     "My Notes",
                                     "Shared Notes"
                                 )
-                            LazyRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) {
-                                items(tabs.size) { index ->
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
+
+                            ScrollableTabRow(
+                                selectedTabIndex = pagerState.currentPage,
+                                edgePadding = 16.dp,
+                                contentColor = Color.Gray,
+                                indicator = { tabPositions ->
+                                    TabRowDefaults.Indicator(
+                                        color = Color.Black,
                                         modifier = Modifier
-                                            .padding(vertical = 8.dp, horizontal = 4.dp)
-                                            .clickable {
-                                                coroutineScope.launch {
-                                                    pagerState.animateScrollToPage(index)
-                                                }
+                                            .tabIndicatorOffset(tabPositions[pagerState.currentPage])
+                                            .fillMaxWidth()
+                                    )
+                                }
+                            ) {
+                                tabs.forEachIndexed { index, tab ->
+                                    Tab(
+                                        selected = pagerState.currentPage == index,
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                pagerState.animateScrollToPage(index)
                                             }
+                                        }
                                     ) {
                                         // Tab text
-                                        Text(
-                                            text = tabs[index],
-                                            color = if (pagerState.currentPage == index) Color.Black else Color.DarkGray,
-                                            fontSize = 14.sp
-                                        )
+                                        Row(
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(10.dp)
+                                        ) {
+                                            Text(
+                                                text = tab,
+                                                color = if (pagerState.currentPage == index) Color(0xFF37ADA6) else Color.DarkGray,
+                                                fontSize = 14.sp,
+                                                fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
+                                            )
 
-                                        // Line below the selected tab
-                                        Box(
-                                            modifier = Modifier
-                                                .padding(top = 4.dp)
-                                                .height(4.dp)
-                                                .requiredWidth(60.dp)
-                                                .background(
-                                                    color = if (pagerState.currentPage == index) Color(
-                                                        0xFF37ADA6
-                                                    ) else Color.Transparent,
-                                                    shape = RoundedCornerShape(2.dp) // Optional: adds rounded corners to the underline
-                                                )
-                                        )
+                                        }
                                     }
                                 }
                             }
-
                             Spacer(modifier = Modifier.height(16.dp))
 
                             // HorizontalPager for content
@@ -254,14 +260,18 @@ class CoursePage {
                                     0 -> Text(data.description, modifier = Modifier.padding(16.dp))
                                     1 -> {
                                         Lecture(courseData, onVideoSelected = {
-                                            viewModel.fetchVideoDetails(context,it)
+                                            viewModel.fetchVideoDetails(context, it)
                                         })
                                     }
 
-                                    2 ->{
-                                        RecommendationScreen(viewModel,data.id,context, onVideoSelected = {url->
-                                            viewModel.fetchVideoDetails(context,url)
-                                        })
+                                    2 -> {
+                                        RecommendationScreen(
+                                            viewModel,
+                                            data.id,
+                                            context,
+                                            onVideoSelected = { url ->
+                                                viewModel.fetchVideoDetails(context, url)
+                                            })
                                     }
 
                                     3 -> Text(
@@ -290,7 +300,7 @@ class CoursePage {
     }
 
     @Composable
-    fun Lecture(courseData: Resource<CourseDetailsResponse?>,onVideoSelected: (String) -> Unit) {
+    fun Lecture(courseData: Resource<CourseDetailsResponse?>, onVideoSelected: (String) -> Unit) {
         when (courseData) {
             is Resource.Loading -> {
                 CircularProgressIndicator(
@@ -312,7 +322,7 @@ class CoursePage {
             is Resource.Success -> {
                 val videos = (courseData as Resource.Success<CourseDetailsResponse?>).data?.videos
 
-                if (videos == null || videos.isEmpty()) {
+                if (videos.isNullOrEmpty()) {
                     Text(
                         "No lectures available",
                         modifier = Modifier
@@ -352,11 +362,14 @@ class CoursePage {
                                             Column {
                                                 videoList.forEach { video ->
                                                     Card(
-                                                        Modifier.padding(5.dp).fillMaxWidth().clickable{
-                                                            onVideoSelected(video.id)
-                                                        },
+                                                        Modifier
+                                                            .padding(5.dp)
+                                                            .fillMaxWidth()
+                                                            .clickable {
+                                                                onVideoSelected(video.id)
+                                                            },
 
-                                                    ) {
+                                                        ) {
                                                         Text(
                                                             text = "${video.videoNumber}. ${video.title} - ${video.duration}",
                                                             style = MaterialTheme.typography.bodyMedium,
@@ -381,6 +394,7 @@ class CoursePage {
             }
         }
     }
+
     @Composable
     fun HorizontalLine() {
         Divider(
@@ -409,7 +423,8 @@ class CoursePage {
         // Pagination logic
         val shouldLoadMore = remember {
             derivedStateOf {
-                val lastVisibleItemIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                val lastVisibleItemIndex =
+                    listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
                 lastVisibleItemIndex >= relatedVideos.size - 1
             }
         }
@@ -447,7 +462,7 @@ class CoursePage {
                 ) {
                     // Video items
                     items(relatedVideos) { video ->
-                        VideoItem(video,context,onVideoSelected)
+                        VideoItem(video, context, onVideoSelected)
                     }
 
                     // Loading indicator at the end
@@ -467,8 +482,9 @@ class CoursePage {
             }
         }
     }
+
     @Composable
-    fun VideoItem(video: RecommendationVideo,context: Context,onVideoSelected: (String) -> Unit) {
+    fun VideoItem(video: RecommendationVideo, context: Context, onVideoSelected: (String) -> Unit) {
         // Extract videoId more robustly
         val videoId = extractVideoId(video.url)
         val thumbnailUrl = "https://img.youtube.com/vi/$videoId/0.jpg"
@@ -477,8 +493,11 @@ class CoursePage {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
-                .clickable{onVideoSelected(video._id)},
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                .clickable { onVideoSelected(video._id) },
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+//            colors = CardDefaults.cardColors(
+//                containerColor = Color(0xFFC2C2C2)
+//            )
         ) {
             Column(
                 modifier = Modifier
@@ -486,17 +505,18 @@ class CoursePage {
                     .padding(16.dp)
             ) {
                 // Use a nested Composable for loading state
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(thumbnailUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Thumbnail for ${video.title}",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(3f / 2f)
-                        .clip(RoundedCornerShape(16.dp)) // Apply rounded corners
-                )
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(thumbnailUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Thumbnail for ${video.title}",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .aspectRatio(3f / 2f)
+                            .clip(RoundedCornerShape(25.dp)) // Apply rounded corners
+                    )
+
 
 
 
@@ -520,7 +540,9 @@ class CoursePage {
         return when {
             url.contains("youtu.be/") -> url.substringAfter("youtu.be/").takeWhile { it != '?' }
             url.contains("youtube.com/watch?v=") -> url.substringAfter("v=").takeWhile { it != '&' }
-            url.contains("youtube.com/embed/") -> url.substringAfter("embed/").takeWhile { it != '?' }
+            url.contains("youtube.com/embed/") -> url.substringAfter("embed/")
+                .takeWhile { it != '?' }
+
             else -> url // Fallback to original URL if no match
         }
     }

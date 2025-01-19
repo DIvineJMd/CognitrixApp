@@ -9,6 +9,7 @@ import android.util.Log
 import android.content.Context
 import com.example.cognitrix.api.login.ApiClient
 import com.example.cognitrix.api.login.LoginRequest
+import com.example.cognitrix.api.login.StudentInfoResponse
 
 sealed class Resource<out T> {
     object Loading : Resource<Nothing>()
@@ -86,4 +87,23 @@ class LoginViewModel : ViewModel() {
             }
         }
     }
+    fun getStudentInfo(context: Context): StudentInfoResponse? {
+        val sharedPref = context.getSharedPreferences("AppData", Context.MODE_PRIVATE)
+        return if (sharedPref.contains("fullName")) {
+            sharedPref.getString("fullName", null)?.let {
+                StudentInfoResponse(
+                    fullName = it,
+                    email = sharedPref.getString("email", null)!!,
+                    phoneNumber = sharedPref.getString("phoneNumber", null)!!,
+                    discordId = sharedPref.getString("discordId", null)!!,
+                    coins = sharedPref.getInt("coins", 0),
+                    rank = sharedPref.getInt("rank", 0),
+                    badge = sharedPref.getString("badge", null)!!
+                )
+            }
+        } else {
+            null // Return null if no student info is stored
+        }
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.example.cognitrix.pages
 
+import LoginViewModel
 import android.annotation.SuppressLint
 import android.content.Context
 import android.provider.ContactsContract
@@ -37,7 +38,7 @@ class Home {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun HomeScreen(
-        context: Context, courseViewModel: CourseViewModel, navController: NavHostController
+        context: Context, courseViewModel: CourseViewModel, navController: NavHostController,loginviewmodel: LoginViewModel
     ) {
         val pagerState = rememberPagerState(pageCount = { 3 })
         val coroutineScope = rememberCoroutineScope()
@@ -165,13 +166,12 @@ class Home {
                     }
 
                     2 -> {
-                        Profile.ProfileScreen(
+                        Profile().ProfileScreen(
                             Modifier
                                 .padding()
                                 .fillMaxSize(),
-                            courseViewModel,
-                            navController,
                             context = context,
+                            viewModel = loginviewmodel
                         )
                     }
                 }

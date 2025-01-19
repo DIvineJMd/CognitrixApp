@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                             courseViewmodel.fetchOngoingCourses(applicationContext)
                             courseViewmodel.fetchRemainingCourses(applicationContext)
                             courseViewmodel.fetchAllCourse(applicationContext)
-                            Home().HomeScreen(applicationContext,courseViewmodel, navController)
+                            Home().HomeScreen(applicationContext,courseViewmodel, navController, loginviewmodel = loginViewModel)
                         }
                         composable("signup") {
                             SignUpPage(navController)

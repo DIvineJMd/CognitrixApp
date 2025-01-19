@@ -30,6 +30,7 @@ interface ApiService {
 
     @GET("api/course/remaining")
     suspend fun getRemainingCourses(): CourseResponse
+
     @GET("api/course")
     suspend fun getAllCourses(): Response<AllCourseDataclass.CourseResponse>
 
@@ -41,12 +42,15 @@ interface ApiService {
 
     @GET("api/video/{videoId}")
     suspend fun getVideoDetails(@Path("videoId") videoId: String): Response<VideoDetailsResponse>
+
     @GET("api/video/{videoId}/recommendations")
     suspend fun getRecommendations(
         @Path("videoId") videoId: String,
         @Query("items") pageSize: Int,
         @Query("offset") offset: Int
     ): Response<RecommendationsResponse>
+
+
 }
 
 object ApiClient {
