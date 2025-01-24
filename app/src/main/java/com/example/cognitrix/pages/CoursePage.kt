@@ -43,9 +43,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-
-
-import com.example.cognitrix.R
 import com.example.cognitrix.api.Dataload.CourseDetailsResponse
 import com.example.cognitrix.api.Dataload.CourseViewModel
 import com.example.cognitrix.api.Dataload.RecommendationVideo
@@ -56,6 +53,11 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.Abs
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import kotlinx.coroutines.launch
 import org.w3c.dom.Text
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.cognitrix.ui.theme.Turquoise
 
 class CoursePage {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -78,13 +80,13 @@ class CoursePage {
                         title = {
                             Text(
                                 modifier = Modifier.padding(horizontal = 2.dp),
-                                text = "Digital VLSI & Memory Design",
+                                text = "Course",
                                 fontWeight = FontWeight.Bold
                             )
                         },
                         scrollBehavior = scrollBehavior,
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color(0xFF37ADA6),
+                            containerColor = Turquoise,
                             titleContentColor = Color.White
                         ),
                         navigationIcon = {
@@ -181,9 +183,7 @@ class CoursePage {
                             )
                             Button(
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(
-                                        0xFF37ADA6
-                                    )
+                                    containerColor = Turquoise
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -239,7 +239,7 @@ class CoursePage {
                                         ) {
                                             Text(
                                                 text = tab,
-                                                color = if (pagerState.currentPage == index) Color(0xFF37ADA6) else Color.DarkGray,
+                                                color = if (pagerState.currentPage == index) Turquoise else Color.DarkGray,
                                                 fontSize = 14.sp,
                                                 fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
                                             )
@@ -248,7 +248,6 @@ class CoursePage {
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
 
                             // HorizontalPager for content
                             HorizontalPager(
@@ -256,7 +255,11 @@ class CoursePage {
                                 modifier = Modifier.fillMaxSize()
                             ) { page ->
                                 when (page) {
-                                    0 -> Text(data.description, modifier = Modifier.padding(16.dp))
+                                    0 -> Text(
+                                        text = data.description,
+                                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                        overflow = TextOverflow.Clip,
+                                    )
                                     1 -> {
                                         Lecture(courseData, onVideoSelected = {
                                             viewModel.fetchVideoDetails(context, it)
@@ -274,16 +277,11 @@ class CoursePage {
                                     }
 
                                     3 -> Text(
-                                        "My Notes Content",
+                                        "To be Implemented",
                                         modifier = Modifier.padding(16.dp)
                                     )
 
                                     4 -> Text(
-                                        "Additional Recommendations Content",
-                                        modifier = Modifier.padding(16.dp)
-                                    )
-
-                                    5 -> Text(
                                         "Shared Notes Content",
                                         modifier = Modifier.padding(16.dp)
                                     )
@@ -452,13 +450,14 @@ class CoursePage {
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
-                LazyColumn(
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2), // Set to 2 columns
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
-                    state = listState,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                    verticalArrangement = Arrangement.spacedBy(8.dp), // Space between rows
+                    horizontalArrangement = Arrangement.spacedBy(8.dp) // Space between columns
+                ){
                     // Video items
                     items(relatedVideos) { video ->
                         VideoItem(video, context, onVideoSelected)
