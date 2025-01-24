@@ -114,8 +114,6 @@ class CoursePage {
             val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 //            val screenHeightPx = configuration.screenHeightDp
             var videoid by remember { mutableStateOf("") }
-
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -123,6 +121,7 @@ class CoursePage {
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .verticalScroll(rememberScrollState())
             ) {
+                Spacer(modifier = Modifier.height(16.dp))
                 when (videoData) {
                     is Resource.Loading -> {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally).padding(top=50.dp))
@@ -172,7 +171,7 @@ class CoursePage {
                                 .padding(top=25.dp)
                                 .clip(RoundedCornerShape(5.dp))
                         )
-
+                        Spacer(modifier = Modifier.height(16.dp))
                         if (!isLandscape) {
                             Text(
                                 text = data.title,
