@@ -202,7 +202,7 @@ class Home {
                 if (courses.value?.isNotEmpty() == true) {
                     Text(
                         text = "OnGoing Courses",
-                        color = Color.Gray,
+                        color = Color.DarkGray,
                         fontWeight = FontWeight.Bold,
                         fontSize = 25.sp,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
