@@ -47,6 +47,8 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.Typography
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.cognitrix.ui.theme.Turquoise
 
@@ -105,7 +107,6 @@ class CoursePage {
             val videoData by viewModel.videoDetails.observeAsState(Resource.Loading())
             val youTubePlayer = remember { mutableStateOf<YouTubePlayer?>(null) }
             val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-//            val screenHeightPx = configuration.screenHeightDp
             var videoid by remember { mutableStateOf("") }
             Column(
                 modifier = Modifier
@@ -166,9 +167,9 @@ class CoursePage {
                         if (!isLandscape) {
                             Text(
                                 text = data.title,
-                                modifier = Modifier.padding(top = 30.dp, start = 5.dp),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 15.sp
+                                modifier = Modifier.padding(top = 30.dp, start = 8.dp),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Button(
                                 colors = ButtonDefaults.buttonColors(
@@ -246,7 +247,9 @@ class CoursePage {
                                 when (page) {
                                     0 -> Text(
                                         text = data.description,
-                                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                        modifier = Modifier
+                                            .padding(top = 40.dp, start = 16.dp, end = 16.dp)
+                                            .fillMaxWidth(),
                                         overflow = TextOverflow.Clip,
                                     )
                                     1 -> {
@@ -329,15 +332,13 @@ class CoursePage {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(5.dp),
-//                                    colors = CardDefaults.cardColors(
-//                                        containerColor = Color(0xFF37ADA6)
-//                                    ),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                                 ) {
                                     Column {
                                         Text(
                                             text = "Lecture $lectureNumber",
-                                            style = MaterialTheme.typography.labelLarge,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color =Color.Black,
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable { expanded = !expanded }
@@ -359,6 +360,7 @@ class CoursePage {
                                                         Text(
                                                             text = "${video.videoNumber}. ${video.title} - ${video.duration}",
                                                             style = MaterialTheme.typography.bodyMedium,
+                                                            color =Color.Black,
                                                             modifier = Modifier.padding(
                                                                 start = 20.dp,
                                                                 top = 4.dp,
@@ -404,13 +406,13 @@ class CoursePage {
         val isLoading by viewModel.isLoading.observeAsState(false)
 
         // Remembering LazyListState
-        val listState = rememberLazyListState()
+        val lazyState = rememberLazyGridState()
 
         // Pagination logic
         val shouldLoadMore = remember {
             derivedStateOf {
                 val lastVisibleItemIndex =
-                    listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                    lazyState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
                 lastVisibleItemIndex >= relatedVideos.size - 1
             }
         }
@@ -441,10 +443,10 @@ class CoursePage {
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2), // Set to 2 columns
+                    state= lazyState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp), // Space between rows
                     horizontalArrangement = Arrangement.spacedBy(8.dp) // Space between columns
                 ){
                     // Video items
@@ -500,15 +502,9 @@ class CoursePage {
                         contentDescription = "Thumbnail for ${video.title}",
                         modifier = Modifier
                             .fillMaxSize()
-                            .aspectRatio(3f / 2f)
-                            .clip(RoundedCornerShape(25.dp)) // Apply rounded corners
+                            .aspectRatio(6f / 5f)
                     )
-
-
-
-
                 Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
                     text = video.title,
                     style = MaterialTheme.typography.titleMedium,
