@@ -48,7 +48,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.cognitrix.ui.theme.Turquoise
 
@@ -63,9 +65,12 @@ class CoursePage {
         val configuration = LocalConfiguration.current
         val courseData by viewModel.courseDetails.observeAsState(Resource.Loading())
         val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val screenWidth = configuration.screenWidthDp.dp
+
         LaunchedEffect(Unit) {
             viewModel.fetchCourseDetails(context = context, courseId)
         }
+
         Scaffold(
             topBar = {
                 if (!isLandscape) {
@@ -103,22 +108,25 @@ class CoursePage {
                     )
                 }
             }
-        ) {
+        ) { paddingValues ->
             val videoData by viewModel.videoDetails.observeAsState(Resource.Loading())
             val youTubePlayer = remember { mutableStateOf<YouTubePlayer?>(null) }
             val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
             var videoid by remember { mutableStateOf("") }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(it)
+                    .padding(paddingValues)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .verticalScroll(rememberScrollState())
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
                 when (videoData) {
                     is Resource.Loading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally).padding(top=50.dp))
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .padding(top = 50.dp)
+                        )
                     }
 
                     is Resource.Error -> {
@@ -128,87 +136,85 @@ class CoursePage {
                     is Resource.Success -> {
                         val data = (videoData as Resource.Success<VideoDetail>).data
                         videoid = data.url.substringAfter("youtu.be/")
-                        AndroidView(
-                            factory = { context ->
-                                YouTubePlayerView(context).apply {
-                                    enableAutomaticInitialization = false
 
-                                    addYouTubePlayerListener(object :
-                                        AbstractYouTubePlayerListener() {
-                                        override fun onReady(youTubePlayer: YouTubePlayer) {
-                                            youTubePlayer.loadVideo(
-                                                videoid, 5f
-                                            )
-                                        }
-                                    })
-
-                                    lifecycleOwner.lifecycle.addObserver(object :
-                                        LifecycleEventObserver {
-                                        override fun onStateChanged(
-                                            source: LifecycleOwner,
-                                            event: Lifecycle.Event
-                                        ) {
-                                            when (event) {
-                                                Lifecycle.Event.ON_PAUSE -> youTubePlayer.value?.pause()
-                                                Lifecycle.Event.ON_RESUME -> youTubePlayer.value?.play()
-                                                Lifecycle.Event.ON_DESTROY -> release()
-                                                else -> {}
-                                            }
-                                        }
-                                    })
-                                }
-                            },
+                        // Video Player Container
+                        Box (
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(if (isLandscape) 275.dp else 200.dp)
-                                .padding(top=25.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        if (!isLandscape) {
+                                .height(if (isLandscape) 400.dp else 250.dp)
+                                .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
+                        ) {
+                            AndroidView(
+                                factory = { context ->
+                                    YouTubePlayerView(context).apply {
+                                        enableAutomaticInitialization = false
+                                        addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
+                                            override fun onReady(youTubePlayer: YouTubePlayer) {
+                                                youTubePlayer.loadVideo(videoid, 5f)
+                                            }
+                                        })
+                                        lifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
+                                            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                                                when (event) {
+                                                    Lifecycle.Event.ON_PAUSE -> youTubePlayer.value?.pause()
+                                                    Lifecycle.Event.ON_RESUME -> youTubePlayer.value?.play()
+                                                    Lifecycle.Event.ON_DESTROY -> release()
+                                                    else -> {}
+                                                }
+                                            }
+                                        })
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxSize()
+                            )
+                        }
+//                        Spacer(modifier = Modifier.height(96.dp))
+
+                        // Video Title and Next Button Container
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
+                        ) {
                             Text(
                                 text = data.title,
-                                modifier = Modifier.padding(top = 30.dp, start = 8.dp),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
                             Button(
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Turquoise
-                                ),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(5.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Turquoise),
+                                modifier = Modifier.fillMaxWidth(),
                                 onClick = {
-                                    (videoData as Resource.Success<VideoDetail>).data.nextVideo?.let { it1 ->
-                                        viewModel.fetchVideoDetails(
-                                            context,
-                                            it1.id
-                                        )
+                                    data.nextVideo?.let { nextVideo ->
+                                        viewModel.fetchVideoDetails(context, nextVideo.id)
                                     }
                                 }
                             ) {
                                 Text(text = "Next Video")
                             }
+                        }
 
-                            val tabs =
-                                listOf(
-                                    "Description",
-                                    "Lectures",
-                                    "Recommendations",
-                                    "My Notes",
-                                    "Shared Notes"
-                                )
+                        // Tabs Container
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp)
+                        ) {
+                            val tabs = listOf("Description", "Lectures", "Recommendations", "My Notes", "Shared Notes")
 
                             ScrollableTabRow(
                                 selectedTabIndex = pagerState.currentPage,
-                                edgePadding = 16.dp,
                                 contentColor = Color.Gray,
+                                edgePadding = if (isLandscape) 32.dp else 16.dp,
+                                modifier = Modifier.fillMaxWidth(),
                                 indicator = { tabPositions ->
-                                    TabRowDefaults.Indicator(
-                                        color = Color.Black,
-                                        modifier = Modifier
-                                            .tabIndicatorOffset(tabPositions[pagerState.currentPage])
-                                            .fillMaxWidth()
+                                    SecondaryIndicator(
+                                        modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
+                                        color = Color.Black
                                     )
                                 }
                             ) {
@@ -219,73 +225,67 @@ class CoursePage {
                                             coroutineScope.launch {
                                                 pagerState.animateScrollToPage(index)
                                             }
-                                        }
+                                        },
+                                        modifier = Modifier.width(screenWidth / 3) // This makes tabs take up 1/3 of screen width
                                     ) {
-                                        // Tab text
-                                        Row(
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(10.dp)
-                                        ) {
-                                            Text(
-                                                text = tab,
-                                                color = if (pagerState.currentPage == index) Turquoise else Color.DarkGray,
-                                                fontSize = 14.sp,
-                                                fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
-                                            )
-
-                                        }
+                                        Text(
+                                            text = tab,
+                                            color = if (pagerState.currentPage == index) Turquoise else Color.DarkGray,
+                                            fontSize = 16.sp,
+                                            fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal,
+                                            modifier = Modifier.padding(vertical = 12.dp),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            textAlign = TextAlign.Center
+                                        )
                                     }
                                 }
                             }
 
-                            // HorizontalPager for content
-                            HorizontalPager(
-                                state = pagerState,
-                                modifier = Modifier.fillMaxSize()
-                            ) { page ->
-                                when (page) {
-                                    0 -> Text(
-                                        text = data.description,
+                            // Tab Content Container
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            ) {
+                                HorizontalPager(
+                                    state = pagerState,
+                                    modifier = Modifier.fillMaxSize()
+                                ) { page ->
+                                    Box(
                                         modifier = Modifier
-                                            .padding(top = 40.dp, start = 16.dp, end = 16.dp)
-                                            .fillMaxWidth(),
-                                        overflow = TextOverflow.Clip,
-                                    )
-                                    1 -> {
-                                        Lecture(courseData, onVideoSelected = {
-                                            viewModel.fetchVideoDetails(context, it)
-                                        })
-                                    }
-
-                                    2 -> {
-                                        RecommendationScreen(
-                                            viewModel,
-                                            data.id,
-                                            context,
-                                            onVideoSelected = { url ->
-                                                viewModel.fetchVideoDetails(context, url)
+                                            .fillMaxSize()
+                                            .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
+                                    ) {
+                                        when (page) {
+                                            0 -> Text(
+                                                text = data.description,
+                                                modifier = Modifier.padding(vertical = 16.dp),
+                                                overflow = TextOverflow.Clip,
+                                            )
+                                            1 -> Lecture(courseData, onVideoSelected = {
+                                                viewModel.fetchVideoDetails(context, it)
                                             })
+                                            2 -> RecommendationScreen(
+                                                viewModel = viewModel,
+                                                videoId = data.id,
+                                                context = context,
+                                                modifier = Modifier.fillMaxSize(),
+                                                onVideoSelected = { url ->
+                                                    viewModel.fetchVideoDetails(context, url)
+                                                }
+                                            )
+                                            3 -> Text("To be Implemented")
+                                            4 -> Text("Shared Notes Content")
+                                        }
                                     }
-
-                                    3 -> Text(
-                                        "To be Implemented",
-                                        modifier = Modifier.padding(16.dp)
-                                    )
-
-                                    4 -> Text(
-                                        "Shared Notes Content",
-                                        modifier = Modifier.padding(16.dp)
-                                    )
                                 }
                             }
                         }
                     }
                 }
-
             }
         }
-
     }
 
     @Composable
@@ -321,7 +321,7 @@ class CoursePage {
                 } else {
                     LazyColumn(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxSize()
                             .heightIn(max = 500.dp) // Limit the height
                     ) {
                         videos.forEach { (lectureNumber, videoList) ->
@@ -404,37 +404,28 @@ class CoursePage {
     ) {
         val relatedVideos by viewModel.relatedVideos.observeAsState(emptyList())
         val isLoading by viewModel.isLoading.observeAsState(false)
-
-        // Remembering LazyListState
         val lazyState = rememberLazyGridState()
+        val configuration = LocalConfiguration.current
+        val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-        // Pagination logic
         val shouldLoadMore = remember {
             derivedStateOf {
-                val lastVisibleItemIndex =
-                    lazyState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                val lastVisibleItemIndex = lazyState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
                 lastVisibleItemIndex >= relatedVideos.size - 1
             }
         }
 
-        // Load initial recommendations
         LaunchedEffect(videoId) {
             viewModel.loadRecommendations(videoId, context)
         }
 
-        // Load more when reaching end of list
         LaunchedEffect(shouldLoadMore.value) {
             if (shouldLoadMore.value && !isLoading) {
                 viewModel.loadRecommendations(videoId, context)
             }
         }
 
-        // Use Box with explicit height constraints
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .heightIn(min = 100.dp, max = 600.dp)  // Set explicit height constraints
-        ) {
+        Box(modifier = modifier) {
             if (relatedVideos.isEmpty() && !isLoading) {
                 Text(
                     text = "No recommendations available",
@@ -442,80 +433,96 @@ class CoursePage {
                 )
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2), // Set to 2 columns
-                    state= lazyState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp) // Space between columns
-                ){
-                    // Video items
+                    columns = GridCells.Fixed(if (isLandscape) 3 else 2),
+                    state = lazyState,
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     items(relatedVideos) { video ->
                         VideoItem(video, context, onVideoSelected)
                     }
 
-                    // Loading indicator at the end
                     if (isLoading) {
                         item {
-                            Box(
+                            CircularProgressIndicator(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
+                                    .padding(16.dp)
+                                    .wrapContentSize()
+                            )
                         }
                     }
                 }
             }
         }
     }
-
     @Composable
-    fun VideoItem(video: RecommendationVideo, context: Context, onVideoSelected: (String) -> Unit) {
+    fun VideoItem(
+        video: RecommendationVideo,
+        context: Context,
+        onVideoSelected: (String) -> Unit
+    ) {
         // Extract videoId more robustly
         val videoId = extractVideoId(video.url)
         val thumbnailUrl = "https://img.youtube.com/vi/$videoId/0.jpg"
         println(thumbnailUrl)
+
+        // Card for the entire video item
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
                 .clickable { onVideoSelected(video._id) },
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-//            colors = CardDefaults.cardColors(
-//                containerColor = Color(0xFFC2C2C2)
-//            )
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
+            // Column layout inside the Card
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp) // Add space between elements
             ) {
-                // Use a nested Composable for loading state
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(thumbnailUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Thumbnail for ${video.title}",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .aspectRatio(6f / 5f)
-                    )
-                Spacer(modifier = Modifier.height(8.dp))
+                // Display the video thumbnail
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(thumbnailUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Thumbnail for ${video.title}",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(6f / 5f)
+                )
+
+
                 Text(
                     text = video.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
-
+                Card(
+                    modifier = Modifier,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (video.watched) Color(0xFF2E7D32) else Color(0xFFD32F2F)
+                    )
+                ) {
+                    Text(
+                        text = if (video.watched) "Watched" else "Not Watched",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(4.dp),
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }
+
 
 
     // Utility function to extract video ID more robustly

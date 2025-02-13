@@ -1,6 +1,5 @@
 package com.example.cognitrix.pages
 
-import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,31 +16,17 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.cognitrix.api.Dataload.CourseViewModel
 import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Color
+import com.example.cognitrix.api.Dataload.LeaderData
 
 class Leaderboard {
     companion object {
-        @OptIn(ExperimentalMaterial3Api::class)
-        @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-        @Composable
-        fun DisplayRecords(
-            records: List<Triple<String, String, Int>>,
-            onRecordClick: (Triple<String, String, Int>) -> Unit
-        ) {
-            records.forEach { (rank, name, coins) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onRecordClick(Triple(rank, name, coins)) }
-                ) {
-                    Text(text = rank, modifier = Modifier.weight(1f).padding(8.dp))
-                    Text(text = name, modifier = Modifier.weight(3f).padding(8.dp))
-                    Text(text = coins.toString(), modifier = Modifier.weight(1f).padding(8.dp))
-                }
-            }
-        }
-
         @Composable
         fun LeaderboardScreen(
             modifier: Modifier,
@@ -50,12 +35,21 @@ class Leaderboard {
             context: Context
         ) {
             // Define state variables
-            val selectedRecord = remember { mutableStateOf<Triple<String, String, Int>?>(null) }
+            val selectedRecord = remember { mutableStateOf<LeaderData?>(null) }
             val showDialog = remember { mutableStateOf(false) }
+            val leaderboard = courseViewModel.leaderboard.observeAsState(emptyList()) // Observe leaderboard data
+            val leaderboardError = courseViewModel.leaderboardError.observeAsState("") // Observe error
+
+            LaunchedEffect(Unit) {
+                courseViewModel.fetchLeaderboard(context) // Fetch leaderboard data when screen is loaded
+            }
 
             Column(modifier = modifier.padding(16.dp)) {
                 // Table Headings
-                Row(modifier = Modifier.fillMaxWidth().border(1.dp, Color.Black).padding(8.dp)) {
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color.Black)
+                    .padding(8.dp)) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -79,31 +73,36 @@ class Leaderboard {
                     }
                 }
 
-                val sampleData = listOf(
-                    Triple("1", "Alice", 100),
-                    Triple("2", "Bob", 200),
-                    Triple("3", "Charlie", 150)
-                )
+                // Show error if there is an issue fetching the leaderboard
+                if (leaderboardError.value.isNotEmpty()) {
+                    Text(text = leaderboardError.value, color = Color.Red)
+                }
 
-                // Displaying Sample Data
-                DisplayRecords(sampleData) { record ->
-                    selectedRecord.value = record
-                    showDialog.value = true
+                // Displaying Leaderboard Data
+                if (leaderboard.value.isNotEmpty()) {
+                    DisplayRecords(leaderboard.value) { record ->
+                        selectedRecord.value = record
+                        showDialog.value = true
+                    }
+                } else {
+                    // Show a loading message or something when data is still being fetched
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center){ CircularProgressIndicator() }
                 }
 
                 // Show dialog if needed
-                if (showDialog.value) {
+                if (showDialog.value && selectedRecord.value != null) {
                     // Details Dialog
                     AlertDialog(
                         onDismissRequest = { showDialog.value = false },
                         title = { Text("Details") },
                         text = {
+                            val record = selectedRecord.value!!
                             Column {
-                                Text("Rank: 1")
-                                Text("Name: Rahul Malhotra")
-                                Text("Coins: 186")
-                                Text("Badges: ")
-                                Text("Courses Done: 2")
+                                Text("Rank: ${record.rank}")
+                                Text("Name: ${record.fullName}")
+                                Text("Coins: ${record.coins}")
+                                Text("Badges: \uD83E\uDD47 ${record.badge}")
+                                Text("Courses Done: ${record.ongoingCourses.size}")
                             }
                         },
                         confirmButton = {
@@ -115,5 +114,43 @@ class Leaderboard {
                 }
             }
         }
+
+        @Composable
+        fun DisplayRecords(
+            records: List<LeaderData>,
+            onRecordClick: (LeaderData) -> Unit
+        ) {
+            LazyColumn {
+                items(records) { record -> // Use 'items' instead of 'forEach'
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onRecordClick(record) }
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = record.rank.toString(),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp)
+                        )
+                        Text(
+                            text = record.fullName,
+                            modifier = Modifier
+                                .weight(3f)
+                                .padding(8.dp)
+                        )
+                        Text(
+                            text = record.coins.toString(),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+
     }
 }

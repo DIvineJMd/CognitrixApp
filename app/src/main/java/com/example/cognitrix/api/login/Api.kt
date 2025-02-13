@@ -4,6 +4,7 @@ import com.example.cognitrix.api.Dataload.AllCourseDataclass
 import com.example.cognitrix.api.Dataload.CourseDetailsResponse
 import com.example.cognitrix.api.Dataload.CourseResponse
 import com.example.cognitrix.api.Dataload.EnrollCourseResponse
+import com.example.cognitrix.api.Dataload.LeaderResponse
 import com.example.cognitrix.api.Dataload.RecommendationsResponse
 import com.example.cognitrix.api.Dataload.VideoDetailsResponse
 import okhttp3.OkHttpClient
@@ -50,7 +51,8 @@ interface ApiService {
         @Query("offset") offset: Int
     ): Response<RecommendationsResponse>
 
-
+    @GET("api/leaderboard")
+    suspend fun getLeaderboard(): Response<LeaderResponse>
 }
 
 object ApiClient {

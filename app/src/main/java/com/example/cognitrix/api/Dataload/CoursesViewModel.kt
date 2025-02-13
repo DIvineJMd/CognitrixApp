@@ -27,6 +27,44 @@ class CourseViewModel : ViewModel() {
     val courses: LiveData<List<AllCourseDataclass.Course>> = _Allcourses // use to get data
 
     private val _Cerror = MutableLiveData<String>()
+    // MutableLiveData for Leaderboard data
+    private val _leaderboard = MutableLiveData<List<LeaderData>>()
+    val leaderboard: LiveData<List<LeaderData>> = _leaderboard
+
+    // MutableLiveData for any errors related to leaderboard
+    private val _leaderboardError = MutableLiveData<String>()
+    val leaderboardError: LiveData<String> = _leaderboardError
+    // Function to fetch leaderboard data
+    fun fetchLeaderboard(context: Context) {
+        _isLoading.value = true // Start loading
+
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context) // Get auth token
+                if (authToken != null) {
+                    // Make the API call to fetch the leaderboard
+                    val response = ApiClient.getInstance(authToken).getLeaderboard()
+
+                    if (response.isSuccessful) {
+                        // If the response is successful, set the leaderboard data
+                        _leaderboard.value =
+                            response.body()?.students // Directly use the body of the response
+                    } else {
+                        // If the response is not successful, set the error message
+                        _leaderboardError.value = "Failed to fetch leaderboard: ${response.message()}"
+                    }
+                } else {
+                    // Handle case where auth token is missing
+                    _leaderboardError.value = "Authorization token missing"
+                }
+            } catch (e: Exception) {
+                // Handle any exceptions that occur during the API call
+                _leaderboardError.value = "Error: ${e.localizedMessage}"
+            } finally {
+                _isLoading.value = false // End loading
+            }
+        }
+    }
 
     // Helper function to get the auth token
      fun getAuthToken(context: Context): String? {
@@ -70,6 +108,7 @@ class CourseViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val authToken = getAuthToken(context)
+                println("====> $authToken")
                 if (authToken != null) {
                     val response = ApiClient.getInstance(authToken).getCourseDetails(courseId)
                     if (response.isSuccessful && response.body()?.success == true) {

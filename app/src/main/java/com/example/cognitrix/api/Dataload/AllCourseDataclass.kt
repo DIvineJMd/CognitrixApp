@@ -31,3 +31,24 @@ class AllCourseDataclass {
     )
 
 }
+// leader
+data class LeaderResponse(
+    val success: Boolean,
+    val students: List<LeaderData>
+)
+data class LeaderData(
+    val _id: String,
+    val ongoingCourses: List<String>,
+    val watchedVideos: List<String>,
+    val notes: List<String>,
+    val coins: Int,
+    val rank: Int,
+    val badge: String,
+    val fullName: String,
+    val email: String,
+    val phoneNumber: String,
+    val discordId: String?,
+    val verified: Boolean,
+    val __t: String,
+    val __v: Int
+)
