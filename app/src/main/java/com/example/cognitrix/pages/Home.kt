@@ -51,59 +51,58 @@ class Home {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp),
-                    contentColor = Color.Black,
+                    containerColor = MaterialTheme.colorScheme.background
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceAround
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(
-                                    0
+                        Divider(color = Color.Gray, thickness = 1.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceAround
+                        ) {
+                            IconButton(onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(
+                                        0
+                                    )
+                                }
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.home),
+                                    contentDescription = "Home",
+                                    modifier = Modifier.size(28.dp),
+                                    tint = if (pagerState.currentPage == 0) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.secondary,
+                                    )
+                            }
+                            IconButton(onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(
+                                        1
+                                    )
+                                }
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.leaderboard),
+                                    contentDescription = "List",
+                                    tint = if (pagerState.currentPage == 1) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(28.dp)
                                 )
                             }
-                        }) {
-                            Icon(
-                                Icons.Default.Home,
-                                contentDescription = "Home",
-                                tint = if (pagerState.currentPage == 0) Color(0xFF37ADA6) else Color(
-                                    0xFF616161
-                                ),
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(
-                                    1
+                            IconButton(onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(
+                                        2
+                                    )
+                                }
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.profile),
+                                    contentDescription = "Profile",
+                                    tint = if (pagerState.currentPage == 2) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(28.dp)
                                 )
                             }
-                        }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.podium),
-                                contentDescription = "List",
-                                tint = if (pagerState.currentPage == 1) Color(0xFF37ADA6) else Color(
-                                    0xFF616161
-                                ),
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(
-                                    2
-                                )
-                            }
-                        }) {
-                            Icon(
-                                Icons.Default.AccountCircle,
-                                contentDescription = "Profile",
-                                tint = if (pagerState.currentPage == 2) Color(0xFF37ADA6) else Color(
-                                    0xFF616161
-                                ),
-                                modifier = Modifier.size(28.dp)
-                            )
                         }
                     }
                 }
@@ -113,27 +112,28 @@ class Home {
                     title = {
                         Text(
                             modifier = Modifier.padding(horizontal = 2.dp),
-                            text = "Hello! $fullName",
-                            fontWeight = FontWeight.Bold
+                            text = "Hello $fullName !",
+                            fontWeight = FontWeight.Bold,
+                            color= MaterialTheme.colorScheme.primary
                         )
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color(0xFF37ADA6),
+                        containerColor = MaterialTheme.colorScheme.surface,
                         titleContentColor = Color.White
                     ),
                     actions = {
                         IconButton(onClick = { /* Bell click */ }) {
                             Icon(
-                                Icons.Outlined.Notifications,
-                                contentDescription = "Bell",
-                                tint = Color.White
+                                painter = painterResource(id = R.drawable.bell),
+                                contentDescription = "Notification",
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                         IconButton(onClick = { /* Logout click */ }) {
                             Icon(
-                                Icons.Outlined.ExitToApp,
+                                painter = painterResource(id=R.drawable.logout),
                                 contentDescription = "logout",
-                                tint = Color.White
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     }

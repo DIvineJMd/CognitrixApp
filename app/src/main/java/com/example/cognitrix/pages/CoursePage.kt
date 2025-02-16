@@ -52,7 +52,6 @@ import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import com.example.cognitrix.ui.theme.Turquoise
 
 class CoursePage {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -84,7 +83,7 @@ class CoursePage {
                         },
                         scrollBehavior = scrollBehavior,
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Turquoise,
+                            containerColor = MaterialTheme.colorScheme.surface,
                             titleContentColor = Color.White
                         ),
                         navigationIcon = {
@@ -186,7 +185,7 @@ class CoursePage {
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Button(
-                                colors = ButtonDefaults.buttonColors(containerColor = Turquoise),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {
                                     data.nextVideo?.let { nextVideo ->
@@ -230,7 +229,7 @@ class CoursePage {
                                     ) {
                                         Text(
                                             text = tab,
-                                            color = if (pagerState.currentPage == index) Turquoise else Color.DarkGray,
+                                            color = if (pagerState.currentPage == index) MaterialTheme.colorScheme.surface else Color.DarkGray,
                                             fontSize = 16.sp,
                                             fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal,
                                             modifier = Modifier.padding(vertical = 12.dp),

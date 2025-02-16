@@ -38,7 +38,6 @@ import com.example.cognitrix.R
 import com.example.cognitrix.api.Dataload.CourseViewModel
 
 class Profile {
-
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ProfileScreen(
