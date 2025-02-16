@@ -53,6 +53,9 @@ interface ApiService {
 
     @GET("api/leaderboard")
     suspend fun getLeaderboard(): Response<LeaderResponse>
+
+    @PATCH("api/video/watch/{videoId}")
+    suspend fun watchedVideo(@Path("videoId") videoId: String): Response<Void>
 }
 
 object ApiClient {

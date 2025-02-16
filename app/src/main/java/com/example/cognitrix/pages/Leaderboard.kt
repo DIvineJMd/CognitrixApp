@@ -117,7 +117,7 @@ class Leaderboard {
 
         @Composable
         fun DisplayRecords(
-            records: List<LeaderData>,
+             records: List<LeaderData>,
             onRecordClick: (LeaderData) -> Unit
         ) {
             LazyColumn {

@@ -54,5 +54,5 @@ data class RecommendationVideo(
     val title: String,
     val url: String,
     val course: String,
-    val watched: Boolean
+    var watched: Boolean
 )

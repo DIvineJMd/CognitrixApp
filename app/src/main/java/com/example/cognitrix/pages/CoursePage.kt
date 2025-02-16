@@ -52,12 +52,13 @@ import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.navigation.NavController
 
 class CoursePage {
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun CourseScreen(viewModel: CourseViewModel, context: Context, courseId: String) {
+    fun CourseScreen(viewModel: CourseViewModel, context: Context, courseId: String,navController: NavController) {
         val pagerState = rememberPagerState(pageCount = { 5 })
         val coroutineScope = rememberCoroutineScope()
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -87,7 +88,7 @@ class CoursePage {
                             titleContentColor = Color.White
                         ),
                         navigationIcon = {
-                            IconButton(onClick = {}) {
+                            IconButton(onClick = {navController.navigateUp()}) {
                                 Icon(
                                     Icons.Default.Home,
                                     contentDescription = "Home",
@@ -137,7 +138,7 @@ class CoursePage {
                         videoid = data.url.substringAfter("youtu.be/")
 
                         // Video Player Container
-                        Box (
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(if (isLandscape) 400.dp else 250.dp)
@@ -147,13 +148,18 @@ class CoursePage {
                                 factory = { context ->
                                     YouTubePlayerView(context).apply {
                                         enableAutomaticInitialization = false
-                                        addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
+                                        addYouTubePlayerListener(object :
+                                            AbstractYouTubePlayerListener() {
                                             override fun onReady(youTubePlayer: YouTubePlayer) {
                                                 youTubePlayer.loadVideo(videoid, 5f)
                                             }
                                         })
-                                        lifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
-                                            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                                        lifecycleOwner.lifecycle.addObserver(object :
+                                            LifecycleEventObserver {
+                                            override fun onStateChanged(
+                                                source: LifecycleOwner,
+                                                event: Lifecycle.Event
+                                            ) {
                                                 when (event) {
                                                     Lifecycle.Event.ON_PAUSE -> youTubePlayer.value?.pause()
                                                     Lifecycle.Event.ON_RESUME -> youTubePlayer.value?.play()
@@ -203,7 +209,13 @@ class CoursePage {
                                 .fillMaxWidth()
                                 .padding(top = 16.dp)
                         ) {
-                            val tabs = listOf("Description", "Lectures", "Recommendations", "My Notes", "Shared Notes")
+                            val tabs = listOf(
+                                "Description",
+                                "Lectures",
+                                "Recommendations",
+                                "My Notes",
+                                "Shared Notes"
+                            )
 
                             ScrollableTabRow(
                                 selectedTabIndex = pagerState.currentPage,
@@ -262,9 +274,11 @@ class CoursePage {
                                                 modifier = Modifier.padding(vertical = 16.dp),
                                                 overflow = TextOverflow.Clip,
                                             )
+
                                             1 -> Lecture(courseData, onVideoSelected = {
                                                 viewModel.fetchVideoDetails(context, it)
                                             })
+
                                             2 -> RecommendationScreen(
                                                 viewModel = viewModel,
                                                 videoId = data.id,
@@ -272,8 +286,10 @@ class CoursePage {
                                                 modifier = Modifier.fillMaxSize(),
                                                 onVideoSelected = { url ->
                                                     viewModel.fetchVideoDetails(context, url)
+                                                    viewModel.markWatched(context, url)
                                                 }
                                             )
+
                                             3 -> Text("To be Implemented")
                                             4 -> Text("Shared Notes Content")
                                         }
@@ -308,7 +324,7 @@ class CoursePage {
             }
 
             is Resource.Success -> {
-                val videos = (courseData as Resource.Success<CourseDetailsResponse?>).data?.videos
+                val videos = courseData.data?.videos
 
                 if (videos.isNullOrEmpty()) {
                     Text(
@@ -337,7 +353,7 @@ class CoursePage {
                                         Text(
                                             text = "Lecture $lectureNumber",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color =Color.Black,
+                                            color = Color.Black,
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable { expanded = !expanded }
@@ -359,7 +375,7 @@ class CoursePage {
                                                         Text(
                                                             text = "${video.videoNumber}. ${video.title} - ${video.duration}",
                                                             style = MaterialTheme.typography.bodyMedium,
-                                                            color =Color.Black,
+                                                            color = Color.Black,
                                                             modifier = Modifier.padding(
                                                                 start = 20.dp,
                                                                 top = 4.dp,
@@ -409,18 +425,19 @@ class CoursePage {
 
         val shouldLoadMore = remember {
             derivedStateOf {
-                val lastVisibleItemIndex = lazyState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                val lastVisibleItemIndex =
+                    lazyState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
                 lastVisibleItemIndex >= relatedVideos.size - 1
             }
         }
 
         LaunchedEffect(videoId) {
-            viewModel.loadRecommendations(videoId, context)
+            viewModel.loadRecommendations(videoId, context,true)
         }
 
         LaunchedEffect(shouldLoadMore.value) {
             if (shouldLoadMore.value && !isLoading) {
-                viewModel.loadRecommendations(videoId, context)
+                viewModel.loadRecommendations(videoId, context,false)
             }
         }
 
@@ -456,6 +473,7 @@ class CoursePage {
             }
         }
     }
+
     @Composable
     fun VideoItem(
         video: RecommendationVideo,
@@ -466,13 +484,15 @@ class CoursePage {
         val videoId = extractVideoId(video.url)
         val thumbnailUrl = "https://img.youtube.com/vi/$videoId/0.jpg"
         println(thumbnailUrl)
-
+        val color by remember { mutableStateOf(video.watched) }
         // Card for the entire video item
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
-                .clickable { onVideoSelected(video._id) },
+                .clickable {
+                    onVideoSelected(video._id)
+                },
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             // Column layout inside the Card
@@ -505,7 +525,7 @@ class CoursePage {
                     modifier = Modifier,
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (video.watched) Color(0xFF2E7D32) else Color(0xFFD32F2F)
+                        containerColor = if (color) Color(0xFF2E7D32) else Color(0xFFD32F2F)
                     )
                 ) {
                     Text(
@@ -521,7 +541,6 @@ class CoursePage {
             }
         }
     }
-
 
 
     // Utility function to extract video ID more robustly

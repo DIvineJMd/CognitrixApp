@@ -1,6 +1,8 @@
 package com.example.cognitrix.api.Dataload
 
+import android.content.ContentValues.TAG
 import android.content.Context
+import android.nfc.Tag
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -10,7 +12,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cognitrix.api.login.ApiClient
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class CourseViewModel : ViewModel() {
 
@@ -75,6 +79,30 @@ class CourseViewModel : ViewModel() {
     val courseDetails: LiveData<Resource<CourseDetailsResponse?>> = _courseDetails
     private val _videoDetails = MutableLiveData<Resource<VideoDetail>>()
     val videoDetails: LiveData<Resource<VideoDetail>> = _videoDetails
+
+    fun markWatched(context: Context, videoId: String) {
+        viewModelScope.launch {
+            try {
+                println("videoId: $videoId")
+                withContext(Dispatchers.IO) {
+                    val auth = getAuthToken(context)
+                    if (auth != null) {
+                        val response = ApiClient.getInstance(auth).watchedVideo(videoId)
+
+                        if (response.isSuccessful) {
+                            Log.d(TAG, "Video marked as watched: $videoId")
+                        } else {
+                            Log.e(TAG, "Failed to mark as watched. Code: ${response.code()}, Message: ${response.message()}")
+                        }
+                    } else {
+                        Log.e(TAG, "Auth token is null")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error marking video as watched", e)
+            }
+        }
+    }
 
     fun fetchVideoDetails(context: Context, videoId: String) {
         _videoDetails.value = Resource.Loading()
@@ -219,26 +247,32 @@ class CourseViewModel : ViewModel() {
 private val _relatedVideos = MutableLiveData<List<RecommendationVideo>>(emptyList())
     val relatedVideos: LiveData<List<RecommendationVideo>> = _relatedVideos
 
-    private val _isLoadingRVideo = MutableLiveData(false)
-    val isLoadingRvideo: LiveData<Boolean> = _isLoading
+//    private val _isLoadingRVideo = MutableLiveData(false)
+//    val isLoadingRvideo: LiveData<Boolean> = _isLoading
 
     private var currentOffset = 0
     private val pageSize = 10
     private var hasMoreItems = true
 
-    fun loadRecommendations(videoId: String, context: Context) {
+    fun loadRecommendations(videoId: String, context: Context,reload:Boolean) {
         // Prevent multiple simultaneous loading or when no more items
         if (_isLoading.value == true || !hasMoreItems) return
 
         _isLoading.value = true
         viewModelScope.launch {
             try {
+                if(reload){
+                    currentOffset = 0
+                    hasMoreItems = true
+                    _relatedVideos.value = emptyList()
+                }
                 val authToken = getAuthToken(context)
                 val response = ApiClient.getInstance(authToken)
                     .getRecommendations(videoId, pageSize, currentOffset)
 
                 if (response.isSuccessful) {
                     response.body()?.let {
+
                         if (it.success) {
                             val newVideos = it.relatedVideos
 

@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
                             val courseId = backStackEntry.arguments?.getString("courseId")
 
                             if (courseId != null) {
-                                CoursePage().CourseScreen(courseViewmodel, applicationContext, courseId)
+                                CoursePage().CourseScreen(courseViewmodel, applicationContext, courseId,navController)
                             }
                         }
 
