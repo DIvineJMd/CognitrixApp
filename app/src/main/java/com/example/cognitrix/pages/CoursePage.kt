@@ -324,7 +324,7 @@ class CoursePage {
             }
 
             is Resource.Success -> {
-                val videos = courseData.data?.videos
+                val videos = (courseData as Resource.Success<CourseDetailsResponse?>).data?.videos
 
                 if (videos.isNullOrEmpty()) {
                     Text(
@@ -353,7 +353,7 @@ class CoursePage {
                                         Text(
                                             text = "Lecture $lectureNumber",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.Black,
+                                            color =Color.Black,
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable { expanded = !expanded }
@@ -375,7 +375,7 @@ class CoursePage {
                                                         Text(
                                                             text = "${video.videoNumber}. ${video.title} - ${video.duration}",
                                                             style = MaterialTheme.typography.bodyMedium,
-                                                            color = Color.Black,
+                                                            color =Color.Black,
                                                             modifier = Modifier.padding(
                                                                 start = 20.dp,
                                                                 top = 4.dp,
@@ -425,8 +425,7 @@ class CoursePage {
 
         val shouldLoadMore = remember {
             derivedStateOf {
-                val lastVisibleItemIndex =
-                    lazyState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                val lastVisibleItemIndex = lazyState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
                 lastVisibleItemIndex >= relatedVideos.size - 1
             }
         }
@@ -541,6 +540,7 @@ class CoursePage {
             }
         }
     }
+
 
 
     // Utility function to extract video ID more robustly
