@@ -3,8 +3,6 @@ package com.example.cognitrix.pages
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
-import android.view.View
-import android.widget.FrameLayout
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -54,11 +52,7 @@ import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-<<<<<<< Updated upstream
 import androidx.navigation.NavController
-=======
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.FullscreenListener
->>>>>>> Stashed changes
 
 class CoursePage {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -143,17 +137,13 @@ class CoursePage {
                         val data = (videoData as Resource.Success<VideoDetail>).data
                         videoid = data.url.substringAfter("youtu.be/")
 
-<<<<<<< Updated upstream
                         // Video Player Container
                         Box(
-=======
-                        Box (
->>>>>>> Stashed changes
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(if (isLandscape) 400.dp else 250.dp)
                                 .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
                         ) {
-<<<<<<< Updated upstream
                             AndroidView(
                                 factory = { context ->
                                     YouTubePlayerView(context).apply {
@@ -182,15 +172,8 @@ class CoursePage {
                                 },
                                 modifier = Modifier
                                     .fillMaxSize()
-=======
-                            VideoPlayerScreen(
-                                videoId = videoid,
-                                lifecycleOwner = lifecycleOwner
->>>>>>> Stashed changes
                             )
                         }
-
-
 //                        Spacer(modifier = Modifier.height(96.dp))
 
                         // Video Title and Next Button Container
