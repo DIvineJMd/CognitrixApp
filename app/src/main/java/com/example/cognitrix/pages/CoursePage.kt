@@ -3,6 +3,8 @@ package com.example.cognitrix.pages
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
+import android.view.View
+import android.widget.FrameLayout
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -53,6 +55,7 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.FullscreenListener
 
 class CoursePage {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -137,43 +140,19 @@ class CoursePage {
                         val data = (videoData as Resource.Success<VideoDetail>).data
                         videoid = data.url.substringAfter("youtu.be/")
 
-                        // Video Player Container
-                        Box(
+                        Box (
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(if (isLandscape) 400.dp else 250.dp)
                                 .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
                         ) {
-                            AndroidView(
-                                factory = { context ->
-                                    YouTubePlayerView(context).apply {
-                                        enableAutomaticInitialization = false
-                                        addYouTubePlayerListener(object :
-                                            AbstractYouTubePlayerListener() {
-                                            override fun onReady(youTubePlayer: YouTubePlayer) {
-                                                youTubePlayer.loadVideo(videoid, 5f)
-                                            }
-                                        })
-                                        lifecycleOwner.lifecycle.addObserver(object :
-                                            LifecycleEventObserver {
-                                            override fun onStateChanged(
-                                                source: LifecycleOwner,
-                                                event: Lifecycle.Event
-                                            ) {
-                                                when (event) {
-                                                    Lifecycle.Event.ON_PAUSE -> youTubePlayer.value?.pause()
-                                                    Lifecycle.Event.ON_RESUME -> youTubePlayer.value?.play()
-                                                    Lifecycle.Event.ON_DESTROY -> release()
-                                                    else -> {}
-                                                }
-                                            }
-                                        })
-                                    }
-                                },
-                                modifier = Modifier
-                                    .fillMaxSize()
+                            VideoPlayerScreen(
+                                videoId = videoid,
+                                lifecycleOwner = lifecycleOwner
                             )
                         }
+
+
 //                        Spacer(modifier = Modifier.height(96.dp))
 
                         // Video Title and Next Button Container
