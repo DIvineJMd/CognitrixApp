@@ -2,6 +2,7 @@ package com.example.cognitrix.pages
 
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -23,12 +25,19 @@ class FullScreenVideoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val videoId = intent.getStringExtra("VIDEO_ID") ?: ""
-        enableEdgeToEdge()
+//        enableEdgeToEdge()
         setContent {
+            val configuration = LocalConfiguration.current
+            val isPotrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 
             FullScreenVideoPlayer(videoId = videoId)
+            if(isPotrait){
+                finish()
+            }
+
         }
     }
+
 }
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -55,19 +64,8 @@ fun FullScreenVideoPlayer(videoId: String) {
         AndroidView(
             factory = { youTubePlayerView },
             modifier = Modifier
-//                .fillMaxWidth()
-                .fillMaxHeight() // 90% of screen height
-        )
 
-//        // Close Button
-//        Button(
-//            onClick = { (context as? ComponentActivity)?.finish() },
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(16.dp)
-//        ) {
-//            Text("Close Fullscreen")
-//        }
+        )
     }
     }
 }

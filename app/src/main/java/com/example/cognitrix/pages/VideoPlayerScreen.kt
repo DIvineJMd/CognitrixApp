@@ -1,11 +1,13 @@
 package com.example.cognitrix.pages
 
 import android.content.Intent
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -24,6 +26,8 @@ fun VideoPlayerScreen(
     val context = LocalContext.current
     val youTubePlayerView = remember { YouTubePlayerView(context) }
     var youTubePlayer by remember { mutableStateOf<YouTubePlayer?>(null) }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     DisposableEffect(videoId) {
         youTubePlayerView.addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
@@ -72,17 +76,20 @@ fun VideoPlayerScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-
-        // Fullscreen Button
-        Button(
-            onClick = {
-                val intent = Intent(context, FullScreenVideoActivity::class.java)
-                intent.putExtra("VIDEO_ID", videoId)
-                context.startActivity(intent)
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Fullscreen")
+        if(isLandscape){
+            val intent = Intent(context, FullScreenVideoActivity::class.java)
+            intent.putExtra("VIDEO_ID", videoId)
+            context.startActivity(intent)
         }
+
+//        // Fullscreen Button
+//        Button(
+//            onClick = {
+//
+//            },
+//            modifier = Modifier.fillMaxWidth()
+//        ) {
+//            Text("Fullscreen")
+//        }
     }
 }

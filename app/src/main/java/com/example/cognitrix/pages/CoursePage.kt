@@ -248,11 +248,13 @@ class CoursePage {
                                             .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
                                     ) {
                                         when (page) {
-                                            0 -> Text(
-                                                text = data.description,
-                                                modifier = Modifier.padding(vertical = 16.dp),
-                                                overflow = TextOverflow.Clip,
-                                            )
+                                            0 -> {
+                                                Text(
+                                                    text = "In this video, the following topics have been discussed: ${data.description }",
+                                                    modifier = Modifier.padding(vertical = 160.dp),
+                                                    overflow = TextOverflow.Clip,
+                                                )
+                                            }
 
                                             1 -> Lecture(courseData, onVideoSelected = {
                                                 viewModel.fetchVideoDetails(context, it)
