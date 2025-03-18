@@ -3,38 +3,51 @@ package com.example.cognitrix.pages
 import LoginViewModel
 import android.annotation.SuppressLint
 import android.content.Context
-import android.provider.ContactsContract
+import android.content.res.Resources.Theme
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.outlined.ExitToApp
-import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.navigation.NavHostController
 import com.example.cognitrix.R
 import com.example.cognitrix.api.Dataload.CourseViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 class Home {
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun HomeScreen(
@@ -44,65 +57,40 @@ class Home {
         val coroutineScope = rememberCoroutineScope()
         val sharedPref = context.getSharedPreferences("AppData", Context.MODE_PRIVATE)
         val fullName = sharedPref.getString("fullName", null)
+        var isPopupVisible by remember { mutableStateOf(false) }
+        val sheetState = rememberModalBottomSheetState()
+
+        fun handleLogout() {
+            // Clear login-related shared preferences
+            sharedPref.edit().clear().apply()
+            
+            // Reset login state in ViewModel if applicable
+//            loginviewmodel.logout()
+            
+            // Navigate back to login screen
+            navController.navigate("login") {
+                popUpTo("home") { inclusive = true }
+            }
+        }
 
         Scaffold(
             bottomBar = {
                 BottomAppBar(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
+                        .fillMaxWidth(),
                     containerColor = MaterialTheme.colorScheme.background
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Divider(color = Color.Gray, thickness = 1.dp)
+                        HorizontalDivider(color = MaterialTheme.colorScheme.tertiary, thickness = 1.dp)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceAround
+                            horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            IconButton(onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(
-                                        0
-                                    )
-                                }
-                            }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.home),
-                                    contentDescription = "Home",
-                                    modifier = Modifier.size(28.dp),
-                                    tint = if (pagerState.currentPage == 0) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.secondary,
-                                    )
-                            }
-                            IconButton(onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(
-                                        1
-                                    )
-                                }
-                            }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.leaderboard),
-                                    contentDescription = "List",
-                                    tint = if (pagerState.currentPage == 1) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                            IconButton(onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(
-                                        2
-                                    )
-                                }
-                            }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.profile),
-                                    contentDescription = "Profile",
-                                    tint = if (pagerState.currentPage == 2) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
+                            NavigationBox(pagerState, coroutineScope, 0, R.drawable.home_filled, R.drawable.home_outline, "Home")
+                            NavigationBox(pagerState, coroutineScope, 1, R.drawable.leaderboard_filled, R.drawable.leaderboard_outline, "Leaderboard")
+                            NavigationBox(pagerState, coroutineScope, 2, R.drawable.profile_filled, R.drawable.profile_outline, "Profile")
                         }
                     }
                 }
@@ -110,31 +98,49 @@ class Home {
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(
-                            modifier = Modifier.padding(horizontal = 2.dp),
-                            text = "Hello $fullName !",
-                            fontWeight = FontWeight.Bold,
-                            color= MaterialTheme.colorScheme.primary
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxHeight(), // Take full height to center vertically
+                            contentAlignment = Alignment.CenterStart // Center content vertically
+                        ) {
+                            Text(
+                                modifier = Modifier.padding(start = 2.dp),
+                                text = "Hello $fullName!",
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.headlineMedium
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = Color.White
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
                     ),
+                    modifier = Modifier.height(88.dp),
                     actions = {
-                        IconButton(onClick = { /* Bell click */ }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.bell),
-                                contentDescription = "Notification",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                        Box(
+                            modifier = Modifier.fillMaxHeight(), // Take full height for vertical centering
+                            contentAlignment = Alignment.CenterEnd // Align icons to the end and center vertically
+                        ) {
+                            IconButton(onClick = { /* Bell click */ }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.bell),
+                                    contentDescription = "Notification",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
-                        IconButton(onClick = { /* Logout click */ }) {
-                            Icon(
-                                painter = painterResource(id=R.drawable.logout),
-                                contentDescription = "logout",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                        Box(
+                            modifier = Modifier.fillMaxHeight(), // Take full height for vertical centering
+                            contentAlignment = Alignment.CenterEnd // Align icons to the end and center vertically
+                        ) {
+                            IconButton(onClick = { isPopupVisible = true }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.logout),
+                                    contentDescription = "Logout",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                     }
                 )
@@ -177,6 +183,60 @@ class Home {
                 }
             }
         }
+        if (isPopupVisible) {
+            ModalBottomSheet(
+                onDismissRequest = {
+                    isPopupVisible = false
+                },
+                sheetState = sheetState,
+                shape= RoundedCornerShape(0.dp),
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                dragHandle = null,
+                modifier = Modifier.fillMaxWidth()
+            )
+            {
+                Text(
+                    text = "Are you sure you want to logout?",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 22.sp,
+                    modifier = Modifier.padding(top=16.dp, bottom = 16.dp, start = 16.dp)
+                )
+                
+                TextButton(
+                    onClick = {
+                        isPopupVisible = false
+                        handleLogout()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical= 2.dp),
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface, // Set background color for button
+                        contentColor = MaterialTheme.colorScheme.onSurface // Set text color for button
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Confirm Logout", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, fontSize = 18.sp)
+                }
+
+                TextButton(
+                    onClick = {
+                        isPopupVisible = false
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical= 1.dp),
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary, // Set background color for button
+                        contentColor = MaterialTheme.colorScheme.primary // Set text color for button
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, fontSize = 18.sp)
+                }
+            }
+        }
     }
 
     @Composable
@@ -186,7 +246,7 @@ class Home {
         navController: NavHostController,
         context: Context
     ) {
-        Column(modifier = modifier) {
+        Column(modifier = modifier.padding(8.dp)) {
             val dataload = courseViewModel.isLoading.observeAsState()
             val courses = courseViewModel.ongoingCourses.observeAsState()
             val recourses = courseViewModel.remainingCourses.observeAsState()
@@ -201,11 +261,9 @@ class Home {
             } else {
                 if (courses.value?.isNotEmpty() == true) {
                     Text(
-                        text = "OnGoing Courses",
-                        color = Color.DarkGray,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 25.sp,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                        text = "Ongoing Courses",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.headlineMedium,
                     )
                 }
                 courses.value?.let { ongoingCourses ->
@@ -225,10 +283,8 @@ class Home {
                 if (!recourses.value.isNullOrEmpty()) {
                     Text(
                         text = "Available Courses ",
-                        color = Color.Gray,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 25.sp,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.headlineMedium
                     )
                 }
                 recourses.value?.let { remainCourse ->
@@ -266,57 +322,51 @@ class Home {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
+                .padding(top = 8.dp, bottom = 16.dp)
                 .clickable { onClick() },
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
-                Spacer(modifier = Modifier.height(8.dp))
-
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.proff),
+                        painter = painterResource(id = R.drawable.anuj_grover),
                         contentDescription = "Instructor Avatar",
                         modifier = Modifier
-                            .size(55.dp)
+                            .size(60.dp)
                             .clip(CircleShape)
                             .background(Color.LightGray, shape = CircleShape)
                     )
-
                     Spacer(modifier = Modifier.width(16.dp))
-
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = courseTitle,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = Color.Black
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Text(
                             text = instructor,
-                            color = Color.Gray,
-                            fontSize = 14.sp
+                            color = MaterialTheme.colorScheme.primary,
+                            style =  MaterialTheme.typography.titleSmall
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 painter = painterResource(id = R.drawable.student),
                                 contentDescription = "Student Icon",
-                                tint = Color.DarkGray,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
                                 text = " $studentCount",
-                                color = Color.DarkGray,
-                                fontSize = 14.sp
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.titleSmall
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(16.dp))
                     Box(contentAlignment = Alignment.Center) {
                         if (enroll == true) {
                             Button(
@@ -324,25 +374,30 @@ class Home {
                                     Onenroll()
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(
-                                        0xFF37ADA6
-                                    )
+                                    containerColor = MaterialTheme.colorScheme.surface
                                 ),
-                            ) { Text(text = "Enroll") }
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = "Enrol",
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = MaterialTheme.typography.headlineSmall
+                                )
+                            }
                         }
                         progress?.let {
                             CircularProgressIndicator(
                                 progress = { it / 100 },
-                                trackColor = Color.LightGray,
-                                modifier = Modifier.size(50.dp),
-                                color = Color(0xFF37ADA6),
-                                strokeWidth = 6.dp,
+                                trackColor = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(60.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                strokeWidth = 8.dp,
 
                                 )
                             Text(
                                 text = "${String.format("%.1f", it)}%",
-                                color = Color.DarkGray,
-                                fontSize = 13.sp
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
                     }
@@ -351,5 +406,48 @@ class Home {
         }
     }
 
+    @Composable
+    fun NavigationBox(
+        pagerState: PagerState,
+        coroutineScope: CoroutineScope,
+        pageIndex: Int,
+        iconFilledRes: Int,
+        iconOutlineRes: Int,
+        label: String
+    ) {
+        Box(
+            modifier = Modifier
+                .clickable {
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(pageIndex)
+                    }
+                }
+                .padding(4.dp)
+                .background(
+                    color = if (pagerState.currentPage == pageIndex) MaterialTheme.colorScheme.surface else Color.Transparent,
+                    shape = RoundedCornerShape(32.dp)
+                )
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painter = painterResource(id = if (pagerState.currentPage == pageIndex) iconFilledRes else iconOutlineRes),
+                    contentDescription = label,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .padding(start = 8.dp, top = 6.dp, bottom = 6.dp),
+                    tint = if (pagerState.currentPage == pageIndex) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.tertiary,
+                )
+                if (pagerState.currentPage == pageIndex) {
+                    Text(
+                        text = label,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleMedium,
+//                        fontSize = 18.sp,
+                        modifier = Modifier.padding(top=6.dp, bottom =6.dp, end = 16.dp)
+                    )
+                }
+            }
+        }
+    }
 }
 

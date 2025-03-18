@@ -1,30 +1,30 @@
 package com.example.cognitrix.pages
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.os.Handler
+import android.os.Looper
 import android.view.View
-import android.widget.FrameLayout
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
@@ -32,9 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.cognitrix.api.Dataload.CourseDetailsResponse
@@ -51,11 +48,67 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
-import androidx.compose.material3.Typography
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.FullscreenListener
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
+
+@Composable
+fun YouTubePlayerScreen(
+    modifier: Modifier = Modifier.fillMaxSize(),
+    videoId: String,
+    activity: Activity = LocalContext.current as Activity,
+    isFullscreen: MutableState<Boolean>
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val youTubePlayerInstance = remember { mutableStateOf<YouTubePlayer?>(null) } // ✅ Preserve instance
+
+    AndroidView(
+        factory = { context ->
+            YouTubePlayerView(context).apply {
+                enableAutomaticInitialization = false
+
+                lifecycleOwner.lifecycle.addObserver(this)
+
+                addFullscreenListener(object : FullscreenListener {
+                    override fun onEnterFullscreen(fullscreenView: View, exitFullscreen: () -> Unit) {
+                        isFullscreen.value = true
+                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                    }
+
+                    override fun onExitFullscreen() {
+                        isFullscreen.value = false
+                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                        }, 1000)
+                    }
+                })
+
+                val iFramePlayerOptions = IFramePlayerOptions.Builder()
+                    .controls(1)
+                    .fullscreen(1)
+                    .build()
+
+                initialize(object : AbstractYouTubePlayerListener() {
+                    override fun onReady(youTubePlayer: YouTubePlayer) {
+                        if (youTubePlayerInstance.value == null) { // ✅ Only load video once
+                            youTubePlayerInstance.value = youTubePlayer
+                            youTubePlayer.loadVideo(videoId, 0f)
+                        } else {
+                            youTubePlayer.cueVideo(videoId, 0f) // ✅ Cue instead of reload
+                        }
+                    }
+                }, iFramePlayerOptions)
+            }
+        },
+        modifier = modifier
+    )
+}
 
 class CoursePage {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -113,9 +166,10 @@ class CoursePage {
             }
         ) { paddingValues ->
             val videoData by viewModel.videoDetails.observeAsState(Resource.Loading())
-            val youTubePlayer = remember { mutableStateOf<YouTubePlayer?>(null) }
-            val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
             var videoid by remember { mutableStateOf("") }
+            var player: YouTubePlayer? = null
+            val activity = LocalContext.current as Activity
+            var isFullscreen = remember { mutableStateOf(false) }
 
             Column(
                 modifier = Modifier
@@ -123,6 +177,16 @@ class CoursePage {
                     .padding(paddingValues)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
             ) {
+                BackHandler(enabled = isFullscreen.value) {
+                    // When back is pressed in fullscreen mode, exit fullscreen instead of navigating back
+                    isFullscreen.value = false
+                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+
+                    // Delay resetting to allow smooth transition
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                    }, 1000)
+                }
                 when (videoData) {
                     is Resource.Loading -> {
                         CircularProgressIndicator(
@@ -139,140 +203,137 @@ class CoursePage {
                     is Resource.Success -> {
                         val data = (videoData as Resource.Success<VideoDetail>).data
                         videoid = data.url.substringAfter("youtu.be/")
-
-                        Box (
+                        YouTubePlayerScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(if (isLandscape) 400.dp else 250.dp)
-                                .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
-                        ) {
-                            VideoPlayerScreen(
-                                videoId = videoid,
-                                lifecycleOwner = lifecycleOwner
-                            )
-                        }
-
-
-//                        Spacer(modifier = Modifier.height(96.dp))
-
-                        // Video Title and Next Button Container
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
-                        ) {
-                            Text(
-                                text = data.title,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Button(
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
-                                modifier = Modifier.fillMaxWidth(),
-                                onClick = {
-                                    data.nextVideo?.let { nextVideo ->
-                                        viewModel.fetchVideoDetails(context, nextVideo.id)
-                                    }
-                                }
-                            ) {
-                                Text(text = "Next Video")
-                            }
-                        }
-
-                        // Tabs Container
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp)
-                        ) {
-                            val tabs = listOf(
-                                "Description",
-                                "Lectures",
-                                "Recommendations",
-                                "My Notes",
-                                "Shared Notes"
-                            )
-
-                            ScrollableTabRow(
-                                selectedTabIndex = pagerState.currentPage,
-                                contentColor = Color.Gray,
-                                edgePadding = if (isLandscape) 32.dp else 16.dp,
-                                modifier = Modifier.fillMaxWidth(),
-                                indicator = { tabPositions ->
-                                    SecondaryIndicator(
-                                        modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                                        color = Color.Black
-                                    )
-                                }
-                            ) {
-                                tabs.forEachIndexed { index, tab ->
-                                    Tab(
-                                        selected = pagerState.currentPage == index,
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                pagerState.animateScrollToPage(index)
-                                            }
-                                        },
-                                        modifier = Modifier.width(screenWidth / 3) // This makes tabs take up 1/3 of screen width
-                                    ) {
-                                        Text(
-                                            text = tab,
-                                            color = if (pagerState.currentPage == index) MaterialTheme.colorScheme.surface else Color.DarkGray,
-                                            fontSize = 16.sp,
-                                            fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal,
-                                            modifier = Modifier.padding(vertical = 12.dp),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Tab Content Container
-                            Box(
+                                .height(250.dp),
+                            videoId = videoid,
+                            activity = activity,
+                            isFullscreen = isFullscreen
+                        )
+                        if (!isFullscreen.value) {
+                            // Video Title and Next Button Container
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .weight(1f)
+                                    .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
                             ) {
-                                HorizontalPager(
-                                    state = pagerState,
-                                    modifier = Modifier.fillMaxSize()
-                                ) { page ->
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
-                                    ) {
-                                        when (page) {
-                                            0 -> {
-                                                Text(
-                                                    text = "In this video, the following topics have been discussed: ${data.description }",
-                                                    modifier = Modifier.padding(vertical = 160.dp),
-                                                    overflow = TextOverflow.Clip,
-                                                )
-                                            }
+                                Text(
+                                    text = data.title,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+//                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 16.dp, bottom = 8.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    onClick = {
+                                        data.nextVideo?.let { nextVideo ->
+                                            viewModel.fetchVideoDetails(context, nextVideo.id)
+                                        }
+                                    }
+                                ) {
+                                    Text(text = "Next Video",
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = MaterialTheme.typography.headlineMedium)
+                                }
+                            }
 
-                                            1 -> Lecture(courseData, onVideoSelected = {
-                                                viewModel.fetchVideoDetails(context, it)
-                                            })
+                            // Tabs Container
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp)
+                            ) {
+                                val tabs = listOf(
+                                    "Description",
+                                    "Lectures",
+                                    "Recommendations",
+                                    "My Notes",
+                                    "Shared Notes"
+                                )
 
-                                            2 -> RecommendationScreen(
-                                                viewModel = viewModel,
-                                                videoId = data.id,
-                                                context = context,
-                                                modifier = Modifier.fillMaxSize(),
-                                                onVideoSelected = { url ->
-                                                    viewModel.fetchVideoDetails(context, url)
-                                                    viewModel.markWatched(context, url)
+                                ScrollableTabRow(
+                                    selectedTabIndex = pagerState.currentPage,
+                                    contentColor = Color.Gray,
+                                    edgePadding = if (isLandscape) 32.dp else 16.dp,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    indicator = { tabPositions ->
+                                        SecondaryIndicator(
+                                            modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
+                                            color = Color.Black
+                                        )
+                                    }
+                                ) {
+                                    tabs.forEachIndexed { index, tab ->
+                                        Tab(
+                                            selected = pagerState.currentPage == index,
+                                            onClick = {
+                                                coroutineScope.launch {
+                                                    pagerState.animateScrollToPage(index)
                                                 }
+                                            },
+                                            modifier = Modifier.width(screenWidth / 3) // This makes tabs take up 1/3 of screen width
+                                        ) {
+                                            Text(
+                                                text = tab,
+                                                color = if (pagerState.currentPage == index) MaterialTheme.colorScheme.surface else Color.DarkGray,
+                                                fontSize = 16.sp,
+                                                fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal,
+                                                modifier = Modifier.padding(vertical = 12.dp),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                textAlign = TextAlign.Center
                                             )
+                                        }
+                                    }
+                                }
 
-                                            3 -> Text("To be Implemented")
-                                            4 -> Text("Shared Notes Content")
+                                // Tab Content Container
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f)
+                                ) {
+                                    HorizontalPager(
+                                        state = pagerState,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) { page ->
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
+                                        ) {
+                                            when (page) {
+                                                0 -> {
+                                                    Text(
+                                                        text = "In this video, the following topics have been discussed: ${data.description}",
+                                                        modifier = Modifier.padding(vertical = 160.dp),
+                                                        overflow = TextOverflow.Clip,
+                                                    )
+                                                }
+
+                                                1 -> Lecture(courseData, onVideoSelected = {
+                                                    viewModel.fetchVideoDetails(context, it)
+                                                })
+
+                                                2 -> RecommendationScreen(
+                                                    viewModel = viewModel,
+                                                    videoId = data.id,
+                                                    context = context,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    onVideoSelected = { url ->
+                                                        viewModel.fetchVideoDetails(context, url)
+                                                        viewModel.markWatched(context, url)
+                                                    }
+                                                )
+
+                                                3 -> Text("To be Implemented")
+                                                4 -> Text("Shared Notes Content")
+                                            }
                                         }
                                     }
                                 }
@@ -283,6 +344,8 @@ class CoursePage {
             }
         }
     }
+
+
 
     @Composable
     fun Lecture(courseData: Resource<CourseDetailsResponse?>, onVideoSelected: (String) -> Unit) {
@@ -305,7 +368,7 @@ class CoursePage {
             }
 
             is Resource.Success -> {
-                val videos = (courseData as Resource.Success<CourseDetailsResponse?>).data?.videos
+                val videos = courseData.data?.videos
 
                 if (videos.isNullOrEmpty()) {
                     Text(
@@ -381,12 +444,12 @@ class CoursePage {
 
     @Composable
     fun HorizontalLine() {
-        Divider(
+        HorizontalDivider(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 3.dp), // Optional: add padding around the line
-            color = Color.LightGray,
-            thickness = 1.dp
+            thickness = 1.dp,
+            color = Color.LightGray
         )
     }
 
@@ -522,8 +585,6 @@ class CoursePage {
         }
     }
 
-
-
     // Utility function to extract video ID more robustly
     fun extractVideoId(url: String): String {
         return when {
@@ -535,11 +596,6 @@ class CoursePage {
             else -> url // Fallback to original URL if no match
         }
     }
-//    @Preview
-//    @Composable
-//    fun CourseScreenPreview() {
-//        CourseScreen()
-//    }
 }
 
 

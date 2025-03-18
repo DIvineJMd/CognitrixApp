@@ -23,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -47,18 +48,20 @@ class Profile {
     ) {
         Column(
             modifier = modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            .fillMaxSize()
+            .padding(16.dp)
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(8.dp)),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             // Profile Image
             Image(
-                painter = painterResource(id = R.drawable.student), // Replace with your image resource
+                painter = painterResource(id = R.drawable.account_circle), // Replace with your image resource
                 contentDescription = "Profile Image",
                 modifier = Modifier
-                    .size(100.dp)
-                    .padding(bottom = 16.dp)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
             )
 
             val userData = viewModel.getStudentInfo(context)
@@ -125,7 +128,7 @@ class Profile {
                     modifier = Modifier.padding(vertical = 4.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.discordicon),
+                        painter = painterResource(id = R.drawable.discord),
                         contentDescription = "Discord Icon",
                         modifier = Modifier.size(20.dp)
                     )
@@ -136,6 +139,21 @@ class Profile {
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 }
+            }
+            Button(
+                onClick = {
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, bottom = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Text(
+                    text = "Edit Profile",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.headlineMedium
+                )
             }
         }
     }
