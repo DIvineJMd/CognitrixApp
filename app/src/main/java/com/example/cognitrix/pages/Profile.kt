@@ -48,15 +48,15 @@ class Profile {
     ) {
         Column(
             modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(8.dp)),
+                .fillMaxSize()
+                .padding(16.dp)
+                .border(BorderStroke(1.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(8.dp)),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             // Profile Image
             Image(
-                painter = painterResource(id = R.drawable.account_circle), // Replace with your image resource
+                painter = painterResource(id = R.drawable.person_dummy),
                 contentDescription = "Profile Image",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -85,7 +85,7 @@ class Profile {
             // Rank
             if (userData != null) {
                 Text(
-                    text = if (userData?.rank != 0) "Rank: ${userData.rank}" else "Rank not available",
+                    text = if (userData.rank != 0) "Rank: ${userData.rank}" else "Rank not available",
                     fontSize = 16.sp,
                     color = Color.Gray,
                     modifier = Modifier.padding(vertical = 4.dp)
@@ -94,7 +94,7 @@ class Profile {
 
             // Badge
             Text(
-                text = ("\uD83E\uDD47: " + userData?.badge?.takeIf { it.isNotBlank() })
+                text = userData?.badge?.takeIf { it.isNotBlank() }?.let { "\uD83E\uDD47: $it" }
                     ?: "Badge not available",
                 fontSize = 16.sp,
                 color = Color.Gray,
@@ -141,8 +141,7 @@ class Profile {
                 }
             }
             Button(
-                onClick = {
-                },
+                onClick = {},
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp, bottom = 8.dp),
@@ -157,5 +156,4 @@ class Profile {
             }
         }
     }
-
 }

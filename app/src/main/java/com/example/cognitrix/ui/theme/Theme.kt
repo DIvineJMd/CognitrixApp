@@ -36,7 +36,7 @@ private val DarkColorScheme = darkColorScheme(
     surface = teal,//
     onSurface = tint,
     outline= Color(0xFF66B3FF),
-
+    onSurfaceVariant = gray3,
     primaryContainer = gray2,//
     secondaryContainer = lightGray,
     background = gray3
@@ -48,6 +48,7 @@ private val LightColorScheme = lightColorScheme(
     tertiary = gray,//
     surface = teal,//
     onSurface = white,
+    onSurfaceVariant = gray3,
     outline= Color(0xFF0066CC),
 
     primaryContainer = lightGray,//

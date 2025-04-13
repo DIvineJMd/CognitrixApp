@@ -42,8 +42,9 @@ android {
 dependencies {
     implementation( libs.accompanist.pager)
     implementation (libs.accompanist.pager.indicators)
-    implementation("io.coil-kt:coil-compose:2.0.0")
-
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation ("androidx.compose.ui:ui-viewbinding:1.7.8")
+    implementation ("androidx.webkit:webkit:1.13.0")
     implementation (libs.retrofit)
     implementation (libs.converter.gson)
     implementation (libs.okhttp)

@@ -1,15 +1,21 @@
 package com.example.cognitrix.pages
 
+import android.R
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Dialog
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -56,59 +62,6 @@ import androidx.navigation.NavController
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.FullscreenListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
 
-@Composable
-fun YouTubePlayerScreen(
-    modifier: Modifier = Modifier.fillMaxSize(),
-    videoId: String,
-    activity: Activity = LocalContext.current as Activity,
-    isFullscreen: MutableState<Boolean>
-) {
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val youTubePlayerInstance = remember { mutableStateOf<YouTubePlayer?>(null) } // ✅ Preserve instance
-
-    AndroidView(
-        factory = { context ->
-            YouTubePlayerView(context).apply {
-                enableAutomaticInitialization = false
-
-                lifecycleOwner.lifecycle.addObserver(this)
-
-                addFullscreenListener(object : FullscreenListener {
-                    override fun onEnterFullscreen(fullscreenView: View, exitFullscreen: () -> Unit) {
-                        isFullscreen.value = true
-                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                    }
-
-                    override fun onExitFullscreen() {
-                        isFullscreen.value = false
-                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
-                        }, 1000)
-                    }
-                })
-
-                val iFramePlayerOptions = IFramePlayerOptions.Builder()
-                    .controls(1)
-                    .fullscreen(1)
-                    .build()
-
-                initialize(object : AbstractYouTubePlayerListener() {
-                    override fun onReady(youTubePlayer: YouTubePlayer) {
-                        if (youTubePlayerInstance.value == null) { // ✅ Only load video once
-                            youTubePlayerInstance.value = youTubePlayer
-                            youTubePlayer.loadVideo(videoId, 0f)
-                        } else {
-                            youTubePlayer.cueVideo(videoId, 0f) // ✅ Cue instead of reload
-                        }
-                    }
-                }, iFramePlayerOptions)
-            }
-        },
-        modifier = modifier
-    )
-}
 
 class CoursePage {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -141,14 +94,14 @@ class CoursePage {
                         scrollBehavior = scrollBehavior,
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.surface,
-                            titleContentColor = Color.White
+                            titleContentColor = MaterialTheme.colorScheme.onSurface
                         ),
                         navigationIcon = {
                             IconButton(onClick = {navController.navigateUp()}) {
                                 Icon(
                                     Icons.Default.Home,
                                     contentDescription = "Home",
-                                    tint = Color.White
+                                    tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         },
@@ -157,7 +110,7 @@ class CoursePage {
                                 Icon(
                                     Icons.AutoMirrored.Filled.List,
                                     contentDescription = "Bell",
-                                    tint = Color.White
+                                    tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -169,7 +122,7 @@ class CoursePage {
             var videoid by remember { mutableStateOf("") }
             var player: YouTubePlayer? = null
             val activity = LocalContext.current as Activity
-            var isFullscreen = remember { mutableStateOf(false) }
+            var isFullscreen by remember { mutableStateOf(false) }
 
             Column(
                 modifier = Modifier
@@ -177,16 +130,6 @@ class CoursePage {
                     .padding(paddingValues)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
             ) {
-                BackHandler(enabled = isFullscreen.value) {
-                    // When back is pressed in fullscreen mode, exit fullscreen instead of navigating back
-                    isFullscreen.value = false
-                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-
-                    // Delay resetting to allow smooth transition
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
-                    }, 1000)
-                }
                 when (videoData) {
                     is Resource.Loading -> {
                         CircularProgressIndicator(
@@ -207,12 +150,11 @@ class CoursePage {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(250.dp),
-                            videoId = videoid,
-                            activity = activity,
-                            isFullscreen = isFullscreen
+                            videoId = videoid
                         )
-                        if (!isFullscreen.value) {
-                            // Video Title and Next Button Container
+
+                        if (!isFullscreen) {
+                            Log.d("Fullscreen", "Not Fullscreen : ${!isFullscreen}")
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -258,13 +200,13 @@ class CoursePage {
 
                                 ScrollableTabRow(
                                     selectedTabIndex = pagerState.currentPage,
-                                    contentColor = Color.Gray,
+                                    contentColor = MaterialTheme.colorScheme.onSurface,
                                     edgePadding = if (isLandscape) 32.dp else 16.dp,
                                     modifier = Modifier.fillMaxWidth(),
                                     indicator = { tabPositions ->
                                         SecondaryIndicator(
                                             modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                                            color = Color.Black
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 ) {
@@ -280,12 +222,12 @@ class CoursePage {
                                         ) {
                                             Text(
                                                 text = tab,
-                                                color = if (pagerState.currentPage == index) MaterialTheme.colorScheme.surface else Color.DarkGray,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (pagerState.currentPage == index) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                                                 fontSize = 16.sp,
-                                                fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal,
                                                 modifier = Modifier.padding(vertical = 12.dp),
                                                 maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
+                                                overflow = TextOverflow.Visible,
                                                 textAlign = TextAlign.Center
                                             )
                                         }
@@ -311,8 +253,8 @@ class CoursePage {
                                                 0 -> {
                                                     Text(
                                                         text = "In this video, the following topics have been discussed: ${data.description}",
-                                                        modifier = Modifier.padding(vertical = 160.dp),
-                                                        overflow = TextOverflow.Clip,
+                                                        modifier = Modifier.padding(vertical = 16.dp),
+                                                        overflow = TextOverflow.Visible,
                                                     )
                                                 }
 
@@ -390,7 +332,8 @@ class CoursePage {
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(5.dp),
+                                        .padding(5.dp)
+                                        .background(MaterialTheme.colorScheme.primaryContainer),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                                 ) {
                                     Column {
@@ -427,7 +370,13 @@ class CoursePage {
                                                             )
                                                         )
                                                     }
-                                                    HorizontalLine()
+                                                    HorizontalDivider(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 3.dp),
+                                                        thickness = 1.dp,
+                                                        color = Color.LightGray
+                                                    )
                                                 }
 
                                             }
@@ -440,17 +389,6 @@ class CoursePage {
                 }
             }
         }
-    }
-
-    @Composable
-    fun HorizontalLine() {
-        HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 3.dp), // Optional: add padding around the line
-            thickness = 1.dp,
-            color = Color.LightGray
-        )
     }
 
     @Composable
@@ -533,6 +471,7 @@ class CoursePage {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer)
                 .clickable {
                     onVideoSelected(video._id)
                 },
