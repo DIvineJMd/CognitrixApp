@@ -54,6 +54,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.text.style.TextAlign
@@ -135,7 +138,7 @@ class CoursePage {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .nestedScroll(rememberNestedScrollInteropConnection())
             ) {
                 when (videoData) {
                     is Resource.Loading -> {
@@ -243,7 +246,6 @@ class CoursePage {
                                     }
                                 }
 
-                                // Tab Content Container
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -302,6 +304,7 @@ class CoursePage {
     }
 
 
+    @SuppressLint("RememberReturnType")
     @Composable
     fun Lecture(
         courseData: Resource<CourseDetailsResponse?>,
@@ -341,7 +344,7 @@ class CoursePage {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .nestedScroll(rememberNestedScrollInteropConnection())
+
                     )
                     {
                         videos.forEach { (lectureNumber, videoList) ->
@@ -451,6 +454,13 @@ class CoursePage {
                     }
                 }
             }
+
+            is Resource.Error -> TODO()
+            is Resource.Loading -> TODO()
+            is Resource.Success -> TODO()
+            is Resource.Error -> TODO()
+            is Resource.Loading -> TODO()
+            is Resource.Success -> TODO()
         }
     }
 
@@ -602,3 +612,17 @@ class CoursePage {
 
 
 
+@Composable
+fun rememberCustomNestedScrollInteropConnection(): NestedScrollConnection {
+    return remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                return available
+            }
+        }
+    }
+}

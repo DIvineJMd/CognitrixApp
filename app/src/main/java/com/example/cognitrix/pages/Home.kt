@@ -5,8 +5,18 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources.Theme
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -52,7 +63,10 @@ class Home {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun HomeScreen(
-        context: Context, courseViewModel: CourseViewModel, navController: NavHostController,loginviewmodel: LoginViewModel
+        context: Context,
+        courseViewModel: CourseViewModel,
+        navController: NavHostController,
+        loginviewmodel: LoginViewModel
     ) {
         val pagerState = rememberPagerState(pageCount = { 3 })
         val coroutineScope = rememberCoroutineScope()
@@ -64,10 +78,10 @@ class Home {
         fun handleLogout() {
             // Clear login-related shared preferences
             sharedPref.edit().clear().apply()
-            
+
             // Reset login state in ViewModel if applicable
 //            loginviewmodel.logout()
-            
+
             // Navigate back to login screen
             navController.navigate("login") {
                 popUpTo("home") { inclusive = true }
@@ -77,8 +91,7 @@ class Home {
         Scaffold(
             bottomBar = {
                 BottomAppBar(
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     containerColor = MaterialTheme.colorScheme.background
                 ) {
                     Column(
@@ -190,7 +203,7 @@ class Home {
                     isPopupVisible = false
                 },
                 sheetState = sheetState,
-                shape= RoundedCornerShape(0.dp),
+                shape = RoundedCornerShape(0.dp),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 dragHandle = null,
                 modifier = Modifier.fillMaxWidth()
@@ -201,9 +214,9 @@ class Home {
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 22.sp,
-                    modifier = Modifier.padding(top=16.dp, bottom = 16.dp, start = 16.dp)
+                    modifier = Modifier.padding(top = 16.dp, bottom = 16.dp, start = 16.dp)
                 )
-                
+
                 TextButton(
                     onClick = {
                         isPopupVisible = false
@@ -211,14 +224,19 @@ class Home {
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical= 2.dp),
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
                     colors = ButtonDefaults.textButtonColors(
                         containerColor = MaterialTheme.colorScheme.surface, // Set background color for button
                         contentColor = MaterialTheme.colorScheme.onSurface // Set text color for button
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Confirm Logout", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, fontSize = 18.sp)
+                    Text(
+                        "Confirm Logout",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 18.sp
+                    )
                 }
 
                 TextButton(
@@ -227,14 +245,19 @@ class Home {
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical= 1.dp),
+                        .padding(horizontal = 16.dp, vertical = 1.dp),
                     colors = ButtonDefaults.textButtonColors(
                         containerColor = MaterialTheme.colorScheme.tertiary, // Set background color for button
                         contentColor = MaterialTheme.colorScheme.primary // Set text color for button
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, fontSize = 18.sp)
+                    Text(
+                        "Cancel",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 18.sp
+                    )
                 }
             }
         }
@@ -356,7 +379,7 @@ class Home {
                         Text(
                             text = instructor,
                             color = MaterialTheme.colorScheme.primary,
-                            style =  MaterialTheme.typography.titleSmall
+                            style = MaterialTheme.typography.titleSmall
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -421,18 +444,18 @@ class Home {
         iconOutlineRes: Int,
         label: String
     ) {
-        Box(
-            modifier = Modifier
-                .clickable {
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(pageIndex)
-                    }
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage(pageIndex)
                 }
-                .padding(4.dp)
-                .background(
-                    color = if (pagerState.currentPage == pageIndex) MaterialTheme.colorScheme.surface else Color.Transparent,
-                    shape = RoundedCornerShape(32.dp)
-                )
+            },
+            modifier = Modifier.padding(4.dp),
+            shape = RoundedCornerShape(32.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (pagerState.currentPage == pageIndex)
+                    MaterialTheme.colorScheme.surface else Color.Transparent
+            )
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -441,19 +464,27 @@ class Home {
                     modifier = Modifier
                         .size(48.dp)
                         .padding(start = 8.dp, top = 6.dp, bottom = 6.dp),
-                    tint = if (pagerState.currentPage == pageIndex) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.tertiary,
+                    tint = if (pagerState.currentPage == pageIndex)
+                        MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.tertiary,
                 )
-                if (pagerState.currentPage == pageIndex) {
+
+                AnimatedVisibility(
+                    visible = pagerState.currentPage == pageIndex,
+                    enter = fadeIn(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)) +
+                            expandHorizontally(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
+                    exit = fadeOut(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)) +
+                            shrinkHorizontally(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+                ) {
                     Text(
                         text = label,
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.titleMedium,
-//                        fontSize = 18.sp,
-                        modifier = Modifier.padding(top=6.dp, bottom =6.dp, end = 16.dp)
+                        modifier = Modifier.padding(top = 6.dp, bottom = 6.dp, end = 16.dp)
                     )
                 }
             }
         }
     }
-}
 
+
+}
