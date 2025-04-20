@@ -55,19 +55,26 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.FullscreenListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
+import okhttp3.internal.wait
 
 
 class CoursePage {
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun CourseScreen(viewModel: CourseViewModel, context: Context, courseId: String,navController: NavController) {
+    fun CourseScreen(
+        viewModel: CourseViewModel,
+        context: Context,
+        courseId: String,
+//        navController: NavController
+    ) {
         val pagerState = rememberPagerState(pageCount = { 5 })
         val coroutineScope = rememberCoroutineScope()
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -75,53 +82,53 @@ class CoursePage {
         val courseData by viewModel.courseDetails.observeAsState(Resource.Loading())
         val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val screenWidth = configuration.screenWidthDp.dp
-
         LaunchedEffect(Unit) {
             viewModel.fetchCourseDetails(context = context, courseId)
         }
 
         Scaffold(
-            topBar = {
-                if (!isLandscape) {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                modifier = Modifier.padding(horizontal = 2.dp),
-                                text = "Course",
-                                fontWeight = FontWeight.Bold
-                            )
-                        },
-                        scrollBehavior = scrollBehavior,
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            titleContentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        navigationIcon = {
-                            IconButton(onClick = {navController.navigateUp()}) {
-                                Icon(
-                                    Icons.Default.Home,
-                                    contentDescription = "Home",
-                                    tint = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = { /* List click */ }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.List,
-                                    contentDescription = "Bell",
-                                    tint = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    )
-                }
-            }
+            modifier = Modifier.fillMaxSize()
+        //            topBar = {
+//                if (!isLandscape) {
+//                    TopAppBar(
+//                        title = {
+//                            Text(
+//                                modifier = Modifier.padding(horizontal = 2.dp),
+//                                text = "Course",
+//                                fontWeight = FontWeight.Bold
+//                            )
+//                        },
+//                        scrollBehavior = scrollBehavior,
+//                        colors = TopAppBarDefaults.topAppBarColors(
+//                            containerColor = MaterialTheme.colorScheme.surface,
+//                            titleContentColor = MaterialTheme.colorScheme.onSurface
+//                        ),
+//                        navigationIcon = {
+//                            IconButton(onClick = { navController.navigateUp() }) {
+//                                Icon(
+//                                    Icons.Default.Home,
+//                                    contentDescription = "Home",
+//                                    tint = MaterialTheme.colorScheme.onSurface
+//                                )
+//                            }
+//                        },
+//                        actions = {
+//                            IconButton(onClick = { /* List click */ }) {
+//                                Icon(
+//                                    Icons.AutoMirrored.Filled.List,
+//                                    contentDescription = "Bell",
+//                                    tint = MaterialTheme.colorScheme.onSurface
+//                                )
+//                            }
+//                        }
+//                    )
+//                }
+//            }
         ) { paddingValues ->
             val videoData by viewModel.videoDetails.observeAsState(Resource.Loading())
-            var videoid by remember { mutableStateOf("") }
-            var player: YouTubePlayer? = null
-            val activity = LocalContext.current as Activity
+//            var videoid by remember { mutableStateOf("") }
+//            var player: YouTubePlayer? = null
+//            val activity = LocalContext.current as Activity
             var isFullscreen by remember { mutableStateOf(false) }
 
             Column(
@@ -145,13 +152,13 @@ class CoursePage {
 
                     is Resource.Success -> {
                         val data = (videoData as Resource.Success<VideoDetail>).data
-                        videoid = data.url.substringAfter("youtu.be/")
-                        YouTubePlayerScreen(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(250.dp),
-                            videoId = videoid
-                        )
+//                        videoid = data.url.substringAfter("youtu.be/")
+//                        YouTubePlayerScreen(
+//                            modifier = Modifier
+//                                .fillMaxWidth()
+//                                .height(250.dp),
+//                            videoId = videoid
+//                        )
 
                         if (!isFullscreen) {
                             Log.d("Fullscreen", "Not Fullscreen : ${!isFullscreen}")
@@ -178,9 +185,11 @@ class CoursePage {
                                         }
                                     }
                                 ) {
-                                    Text(text = "Next Video",
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    style = MaterialTheme.typography.headlineMedium)
+                                    Text(
+                                        text = "Next Video",
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        style = MaterialTheme.typography.headlineMedium
+                                    )
                                 }
                             }
 
@@ -218,7 +227,7 @@ class CoursePage {
                                                     pagerState.animateScrollToPage(index)
                                                 }
                                             },
-                                            modifier = Modifier.width(screenWidth / 3) // This makes tabs take up 1/3 of screen width
+                                            modifier = Modifier.width(screenWidth / 3)
                                         ) {
                                             Text(
                                                 text = tab,
@@ -238,6 +247,7 @@ class CoursePage {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .fillMaxHeight()
                                         .weight(1f)
                                 ) {
                                     HorizontalPager(
@@ -258,9 +268,13 @@ class CoursePage {
                                                     )
                                                 }
 
-                                                1 -> Lecture(courseData, onVideoSelected = {
-                                                    viewModel.fetchVideoDetails(context, it)
-                                                })
+                                                1 -> {
+                                                    Box(modifier = Modifier.fillMaxSize())
+                                                    {Lecture(courseData, onVideoSelected = {
+                                                        viewModel.fetchVideoDetails(context, it)
+                                                    }, viewModel, context)}
+                                                }
+
 
                                                 2 -> RecommendationScreen(
                                                     viewModel = viewModel,
@@ -269,7 +283,7 @@ class CoursePage {
                                                     modifier = Modifier.fillMaxSize(),
                                                     onVideoSelected = { url ->
                                                         viewModel.fetchVideoDetails(context, url)
-                                                        viewModel.markWatched(context, url)
+                                                        viewModel.markWatched(context, url, onSuccess = {})
                                                     }
                                                 )
 
@@ -288,9 +302,13 @@ class CoursePage {
     }
 
 
-
     @Composable
-    fun Lecture(courseData: Resource<CourseDetailsResponse?>, onVideoSelected: (String) -> Unit) {
+    fun Lecture(
+        courseData: Resource<CourseDetailsResponse?>,
+        onVideoSelected: (String) -> Unit,
+        viewModel: CourseViewModel,
+        context: Context,
+    ) {
         when (courseData) {
             is Resource.Loading -> {
                 CircularProgressIndicator(
@@ -323,8 +341,9 @@ class CoursePage {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .heightIn(max = 500.dp) // Limit the height
-                    ) {
+                            .nestedScroll(rememberNestedScrollInteropConnection())
+                    )
+                    {
                         videos.forEach { (lectureNumber, videoList) ->
                             item {
                                 var expanded by remember { mutableStateOf(false) }
@@ -340,7 +359,7 @@ class CoursePage {
                                         Text(
                                             text = "Lecture $lectureNumber",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color =Color.Black,
+                                            color = Color.Black,
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable { expanded = !expanded }
@@ -355,20 +374,64 @@ class CoursePage {
                                                             .padding(5.dp)
                                                             .fillMaxWidth()
                                                             .clickable {
+                                                                if (video.watched.not()) {
+                                                                    viewModel.markWatched(
+                                                                        context,
+                                                                        video.id,
+                                                                        onSuccess = {
+                                                                            video.watched = true
+                                                                        }
+                                                                    )
+                                                                }
                                                                 onVideoSelected(video.id)
                                                             },
 
                                                         ) {
-                                                        Text(
-                                                            text = "${video.videoNumber}. ${video.title} - ${video.duration}",
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            color =Color.Black,
-                                                            modifier = Modifier.padding(
-                                                                start = 20.dp,
-                                                                top = 4.dp,
-                                                                bottom = 4.dp
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            horizontalArrangement = Arrangement.Start
+                                                        ) {
+                                                            var check by remember {
+                                                                mutableStateOf(
+                                                                    video.watched
+                                                                )
+                                                            }
+
+                                                            Checkbox(
+                                                                checked = check,
+                                                                onCheckedChange = { isChecked ->
+                                                                    check = isChecked
+                                                                    if (isChecked) {
+                                                                        viewModel.markWatched(
+                                                                            context,
+                                                                            video.id,
+                                                                            onSuccess = {
+                                                                                video.watched = true
+                                                                            })
+                                                                    } else {
+                                                                        viewModel.unmarkWatched(
+                                                                            context,
+                                                                            video.id,
+                                                                            onSuccess = {
+                                                                                video.watched =
+                                                                                    false
+                                                                            })
+                                                                    }
+                                                                }
                                                             )
-                                                        )
+
+                                                            Text(
+                                                                text = "${video.videoNumber}. ${video.title} - ${video.duration}",
+                                                                style = MaterialTheme.typography.bodyMedium,
+                                                                color = Color.Black,
+                                                                modifier = Modifier.padding(
+                                                                    start = 20.dp,
+                                                                    top = 4.dp,
+                                                                    bottom = 4.dp
+                                                                )
+                                                            )
+                                                        }
+
                                                     }
                                                     HorizontalDivider(
                                                         modifier = Modifier
@@ -407,18 +470,19 @@ class CoursePage {
 
         val shouldLoadMore = remember {
             derivedStateOf {
-                val lastVisibleItemIndex = lazyState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                val lastVisibleItemIndex =
+                    lazyState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
                 lastVisibleItemIndex >= relatedVideos.size - 1
             }
         }
 
         LaunchedEffect(videoId) {
-            viewModel.loadRecommendations(videoId, context,true)
+            viewModel.loadRecommendations(videoId, context, true)
         }
 
         LaunchedEffect(shouldLoadMore.value) {
             if (shouldLoadMore.value && !isLoading) {
-                viewModel.loadRecommendations(videoId, context,false)
+                viewModel.loadRecommendations(videoId, context, false)
             }
         }
 
@@ -524,7 +588,6 @@ class CoursePage {
         }
     }
 
-    // Utility function to extract video ID more robustly
     fun extractVideoId(url: String): String {
         return when {
             url.contains("youtu.be/") -> url.substringAfter("youtu.be/").takeWhile { it != '?' }

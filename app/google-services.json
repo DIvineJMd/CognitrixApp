@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "66214214487",
+    "project_id": "cognitrix-2025",
+    "storage_bucket": "cognitrix-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66214214487:android:b192f42e9f6a27d2d4dc12",
+        "android_client_info": {
+          "package_name": "com.example.cognitrix"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsRkmDdg9yMeVcTgDvD-GOduUFxSKWVyw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

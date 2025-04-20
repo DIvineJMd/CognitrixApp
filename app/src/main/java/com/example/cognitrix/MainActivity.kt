@@ -13,6 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ShaderBrush
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,17 +29,22 @@ class MainActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModels()
     private val courseViewmodel: CourseViewModel by viewModels()
 
+    object SharedViewModelHolder {
+        var courseViewModel: CourseViewModel? = null
+    }
+
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+//        enableEdgeToEdge()
         setContent {
+            SharedViewModelHolder.courseViewModel = courseViewmodel
             CognitrixTheme {
                 val navController = rememberNavController()
                 Scaffold(modifier = Modifier.fillMaxSize()) {
                     NavHost(
                         navController = navController,
-                        startDestination = if (courseViewmodel.getAuthToken(applicationContext)
+                        startDestination = if (SharedViewModelHolder.courseViewModel?.getAuthToken(applicationContext)
                                 .isNullOrEmpty()
                         ) "login" else "home"
                     ) {
@@ -49,10 +55,20 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("home") {
-                            courseViewmodel.fetchOngoingCourses(applicationContext)
-                            courseViewmodel.fetchRemainingCourses(applicationContext)
-                            courseViewmodel.fetchAllCourse(applicationContext)
-                            Home().HomeScreen(applicationContext,courseViewmodel, navController, loginviewmodel = loginViewModel)
+                            SharedViewModelHolder.courseViewModel?.fetchOngoingCourses(
+                                applicationContext
+                            )
+                            SharedViewModelHolder.courseViewModel?.fetchRemainingCourses(
+                                applicationContext
+                            )
+                            SharedViewModelHolder.courseViewModel?.fetchAllCourse(applicationContext)
+
+                            Home().HomeScreen(
+                                applicationContext,
+                                SharedViewModelHolder.courseViewModel!!,
+                                navController,
+                                loginviewmodel = loginViewModel
+                            )
                         }
                         composable("signup") {
                             SignUpPage(navController)
@@ -66,7 +82,11 @@ class MainActivity : ComponentActivity() {
                             val courseId = backStackEntry.arguments?.getString("courseId")
 
                             if (courseId != null) {
-                                CoursePage().CourseScreen(courseViewmodel, applicationContext, courseId,navController)
+                                CoursePage().CourseScreen(
+                                    SharedViewModelHolder.courseViewModel!!,
+                                    applicationContext,
+                                    courseId
+                                )
                             }
                         }
 

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -17,7 +18,9 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
+    buildFeatures {
+        viewBinding = true
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -40,15 +43,22 @@ android {
 }
 
 dependencies {
-    implementation( libs.accompanist.pager)
-    implementation (libs.accompanist.pager.indicators)
+//    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+//    implementation("com.google.firebase:firebase-analytics")
+//    implementation("com.google.firebase:firebase-crashlytics")
+//    implementation("com.google.firebase:firebase-appdistribution-api-ktx:16.0.0-beta15")
+//    betaImplementation("com.google.firebase:firebase-appdistribution:16.0.0-beta15")
+
+//    classpath ("com.google.gms:google-services:4.4.2")
+    implementation(libs.accompanist.pager)
+    implementation(libs.accompanist.pager.indicators)
     implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation ("androidx.compose.ui:ui-viewbinding:1.7.8")
-    implementation ("androidx.webkit:webkit:1.13.0")
-    implementation (libs.retrofit)
-    implementation (libs.converter.gson)
-    implementation (libs.okhttp)
-    implementation (libs.json)
+    implementation("androidx.compose.ui:ui-viewbinding:1.7.8")
+    implementation("androidx.webkit:webkit:1.13.0")
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.json)
     implementation(libs.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -64,6 +74,7 @@ dependencies {
     implementation(libs.play.services.games)
     implementation(libs.volley)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

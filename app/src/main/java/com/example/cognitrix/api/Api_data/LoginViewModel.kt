@@ -7,9 +7,9 @@ import kotlinx.coroutines.launch
 import retrofit2.awaitResponse
 import android.util.Log
 import android.content.Context
-import com.example.cognitrix.api.login.ApiClient
-import com.example.cognitrix.api.login.LoginRequest
-import com.example.cognitrix.api.login.StudentInfoResponse
+import com.example.cognitrix.api.Api_data.ApiClient
+import com.example.cognitrix.api.Api_data.LoginRequest
+import com.example.cognitrix.api.Api_data.StudentInfoResponse
 
 sealed class Resource<out T> {
     object Loading : Resource<Nothing>()

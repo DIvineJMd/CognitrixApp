@@ -24,6 +24,7 @@ playServicesLocation = "21.3.0"
 playServicesGames = "23.2.0"
 volley = "1.2.1"
 appcompat = "1.7.0"
+constraintlayout = "2.2.1"
 
 [libraries]
 accompanist-pager = { module = "com.google.accompanist:accompanist-pager", version.ref = "accompanistPager" }
@@ -58,8 +59,10 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 play-services-games = { group = "com.google.android.gms", name = "play-services-games", version.ref = "playServicesGames" }
 volley = { group = "com.android.volley", name = "volley", version.ref = "volley" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
 [plugins]
+google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

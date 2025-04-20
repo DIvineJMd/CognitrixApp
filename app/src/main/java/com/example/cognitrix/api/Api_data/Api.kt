@@ -1,4 +1,4 @@
-package com.example.cognitrix.api.login
+package com.example.cognitrix.api.Api_data
 
 import com.example.cognitrix.api.Dataload.AllCourseDataclass
 import com.example.cognitrix.api.Dataload.CourseDetailsResponse
@@ -56,6 +56,9 @@ interface ApiService {
 
     @PATCH("api/video/watch/{videoId}")
     suspend fun watchedVideo(@Path("videoId") videoId: String): Response<Void>
+
+    @PATCH("api/video/unwatch/{videoId}")
+    suspend fun unwatchedVideo(@Path("videoId") videoId: String): Response<Void>
 }
 
 object ApiClient {

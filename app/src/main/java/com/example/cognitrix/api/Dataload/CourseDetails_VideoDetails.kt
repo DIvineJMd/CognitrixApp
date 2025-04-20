@@ -23,7 +23,7 @@ data class Video(
     @SerializedName("duration") val duration: String,
     @SerializedName("lectureNumber") val lectureNumber: Int,
     @SerializedName("videoNumber") val videoNumber: Int,
-    @SerializedName("watched") val watched: Boolean
+    @SerializedName("watched") var watched: Boolean
 )
 
 data class VideoDetailsResponse(

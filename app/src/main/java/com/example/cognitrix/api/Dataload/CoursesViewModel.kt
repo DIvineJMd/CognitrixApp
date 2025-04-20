@@ -1,17 +1,12 @@
 package com.example.cognitrix.api.Dataload
 
-import android.content.ContentValues.TAG
 import android.content.Context
-import android.nfc.Tag
 import android.util.Log
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cognitrix.api.login.ApiClient
+import com.example.cognitrix.api.Api_data.ApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -19,28 +14,25 @@ import kotlinx.coroutines.withContext
 class CourseViewModel : ViewModel() {
 
     private val _ongoingCourses = MutableLiveData<List<Course>>()
-    val ongoingCourses: LiveData<List<Course>> = _ongoingCourses // use to get data
+    val ongoingCourses: LiveData<List<Course>> = _ongoingCourses
 
     private val _remainingCourses = MutableLiveData<List<Course>>()
-    val remainingCourses: LiveData<List<Course>> = _remainingCourses // use to get data
+    val remainingCourses: LiveData<List<Course>> = _remainingCourses
 
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
     private val _Allcourses = MutableLiveData<List<AllCourseDataclass.Course>>()
-    val courses: LiveData<List<AllCourseDataclass.Course>> = _Allcourses // use to get data
+    val courses: LiveData<List<AllCourseDataclass.Course>> = _Allcourses
 
     private val _Cerror = MutableLiveData<String>()
-    // MutableLiveData for Leaderboard data
     private val _leaderboard = MutableLiveData<List<LeaderData>>()
     val leaderboard: LiveData<List<LeaderData>> = _leaderboard
 
-    // MutableLiveData for any errors related to leaderboard
     private val _leaderboardError = MutableLiveData<String>()
     val leaderboardError: LiveData<String> = _leaderboardError
-    // Function to fetch leaderboard data
     fun fetchLeaderboard(context: Context) {
-        _isLoading.value = true // Start loading
+        _isLoading.value = true
 
         viewModelScope.launch {
             try {
@@ -70,7 +62,6 @@ class CourseViewModel : ViewModel() {
         }
     }
 
-    // Helper function to get the auth token
      fun getAuthToken(context: Context): String? {
         val sharedPref = context.getSharedPreferences("AppData", Context.MODE_PRIVATE)
         return sharedPref.getString("auth_token", null)
@@ -80,7 +71,7 @@ class CourseViewModel : ViewModel() {
     private val _videoDetails = MutableLiveData<Resource<VideoDetail>>()
     val videoDetails: LiveData<Resource<VideoDetail>> = _videoDetails
 
-    fun markWatched(context: Context, videoId: String) {
+    fun markWatched(context: Context, videoId: String,onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
                 println("videoId: $videoId")
@@ -90,20 +81,45 @@ class CourseViewModel : ViewModel() {
                         val response = ApiClient.getInstance(auth).watchedVideo(videoId)
 
                         if (response.isSuccessful) {
-                            Log.d(TAG, "Video marked as watched: $videoId")
+                            onSuccess.invoke()
+                            Log.d("TAG", "Video marked as watched: $videoId")
                         } else {
-                            Log.e(TAG, "Failed to mark as watched. Code: ${response.code()}, Message: ${response.message()}")
+                            Log.e("TAG", "Failed to mark as watched. Code: ${response.code()}, Message: ${response.message()}")
                         }
                     } else {
-                        Log.e(TAG, "Auth token is null")
+                        Log.e("TAG", "Auth token is null")
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error marking video as watched", e)
+                Log.e("TAG", "Error marking video as watched", e)
             }
         }
     }
 
+
+    fun unmarkWatched(context: Context, videoId: String,onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                println("videoId: $videoId")
+                withContext(Dispatchers.IO) {
+                    val auth = getAuthToken(context)
+                    if (auth != null) {
+                        val response = ApiClient.getInstance(auth).unwatchedVideo(videoId)
+                        if (response.isSuccessful) {
+                            onSuccess.invoke()
+                            Log.d("TAG", "Video marked as unwatched: $videoId ${response.body()}")
+                        } else {
+                            Log.e("TAG", "Failed to mark as unwatched. Code: ${response.code()}, Message: ${response.message()}")
+                        }
+                    } else {
+                        Log.e("TAG", "Auth token is null")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("TAG", "Error marking video as unwatched", e)
+            }
+        }
+    }
     fun fetchVideoDetails(context: Context, videoId: String) {
         _videoDetails.value = Resource.Loading()
         viewModelScope.launch {

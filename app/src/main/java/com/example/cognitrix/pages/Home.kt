@@ -3,6 +3,7 @@ package com.example.cognitrix.pages
 import LoginViewModel
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.res.Resources.Theme
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -271,7 +272,12 @@ class Home {
                         CourseCard(
                             courseTitle = data.title,
                             onClick = {
-                                navController.navigate("Lecture/${data._id}")
+//                                navController.navigate("Lecture/${data._id}")
+                                val intent = Intent(context, CourseActivity::class.java).apply {
+                                    putExtra("courseId", data._id)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
                             },
                             instructor = data.creator.fullName,
                             studentCount = data.numEnrolledStudents,

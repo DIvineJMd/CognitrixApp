@@ -1,4 +1,4 @@
-package com.example.cognitrix.api.login
+package com.example.cognitrix.api.Api_data
 
 data class LoginRequest(val email: String, val password: String)
 data class LoginResponse(val success: Boolean, val token: String?, val role: String, val verified: Boolean)
