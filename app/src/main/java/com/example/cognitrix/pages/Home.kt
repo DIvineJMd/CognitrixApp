@@ -21,6 +21,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -28,6 +29,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -48,6 +53,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
@@ -82,7 +89,6 @@ class Home {
             // Reset login state in ViewModel if applicable
 //            loginviewmodel.logout()
 
-            // Navigate back to login screen
             navController.navigate("login") {
                 popUpTo("home") { inclusive = true }
             }
@@ -175,7 +181,7 @@ class Home {
                     )
 
                     1 -> {
-                        Leaderboard.LeaderboardScreen(
+                        Leaderboard().LeaderboardScreen(
                             Modifier
                                 .padding()
                                 .fillMaxSize(),
@@ -262,76 +268,116 @@ class Home {
             }
         }
     }
-
     @Composable
     fun HomeScreen(
-        modifier: Modifier,
+        modifier: Modifier = Modifier,
         courseViewModel: CourseViewModel,
         navController: NavHostController,
         context: Context
     ) {
-        Column(modifier = modifier.padding(8.dp)) {
-            val dataload = courseViewModel.isLoading.observeAsState()
-            val courses = courseViewModel.ongoingCourses.observeAsState()
-            val recourses = courseViewModel.remainingCourses.observeAsState()
-            val allCourseDataclass = courseViewModel.courses.observeAsState()
+        val dataload = courseViewModel.isLoading.observeAsState()
+        val courses = courseViewModel.ongoingCourses.observeAsState()
+        val recourses = courseViewModel.remainingCourses.observeAsState()
 
+        LazyColumn(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             if (dataload.value == true) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(alignment = Alignment.CenterHorizontally)
-                        .padding(vertical = 20.dp)
-                )
-            } else {
-                if (courses.value?.isNotEmpty() == true) {
-                    Text(
-                        text = "Ongoing Courses",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                }
-                courses.value?.let { ongoingCourses ->
-                    ongoingCourses.forEach { data ->
-                        CourseCard(
-                            courseTitle = data.title,
-                            onClick = {
-//                                navController.navigate("Lecture/${data._id}")
-                                val intent = Intent(context, CourseActivity::class.java).apply {
-                                    putExtra("courseId", data._id)
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(intent)
-                            },
-                            instructor = data.creator.fullName,
-                            studentCount = data.numEnrolledStudents,
-                            progress = data.progress?.toFloat(),
-                            enroll = false
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
-                if (!recourses.value.isNullOrEmpty()) {
-                    Text(
-                        text = "Available Courses ",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                }
-                recourses.value?.let { remainCourse ->
-                    remainCourse.forEach { data ->
-                        CourseCard(
-                            courseTitle = data.title,
-                            instructor = data.creator.fullName,
-                            studentCount = data.numEnrolledStudents,
-                            progress = data.progress?.toFloat(),
-                            enroll = true,
-                            onClick = { navController.navigate("video") },
-                            Onenroll = {
-                                courseViewModel.enrollInCourse(context, data._id)
-                                courseViewModel.fetchOngoingCourses(context)
-                                courseViewModel.fetchRemainingCourses(context)
-
-                            }
+            } else {
+                // Header
+                item {
+                    Column(modifier = Modifier.padding(vertical = 16.dp)) {
+                        Text(
+                            text = "My Learning",
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
                         )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Continue where you left off",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Ongoing Courses Section
+                if (courses.value?.isNotEmpty() == true) {
+                    item {
+                        SectionHeader(
+                            title = "Ongoing Courses",
+                            subtitle = "Continue your learning journey"
+                        )
+                    }
+
+                    items(courses.value?.size ?: 0) { index ->
+                        courses.value?.get(index)?.let { data ->
+                            EnhancedCourseCard(
+                                courseTitle = data.title,
+                                instructor = data.creator.fullName,
+                                studentCount = data.numEnrolledStudents,
+                                progress = data.progress?.toFloat(),
+                                isEnrollable = false,
+                                onClick = {
+                                    val intent = Intent(context, CourseActivity::class.java).apply {
+                                        putExtra("courseId", data._id)
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (!recourses.value.isNullOrEmpty()) {
+                    item {
+                        SectionHeader(
+                            title = "Available Courses",
+                            subtitle = "Discover new learning opportunities"
+                        )
+                    }
+
+                    items(recourses.value?.size ?: 0) { index ->
+                        recourses.value?.get(index)?.let { data ->
+                            EnhancedCourseCard(
+                                courseTitle = data.title,
+                                instructor = data.creator.fullName,
+                                studentCount = data.numEnrolledStudents,
+                                progress = data.progress?.toFloat(),
+                                isEnrollable = true,
+                                onClick = { navController.navigate("video") },
+                                onEnroll = {
+                                    courseViewModel.enrollInCourse(context, data._id)
+                                    courseViewModel.fetchOngoingCourses(context)
+                                    courseViewModel.fetchRemainingCourses(context)
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // No courses state
+                if (courses.value.isNullOrEmpty() && recourses.value.isNullOrEmpty()) {
+                    item {
+                        EmptyStateMessage()
                     }
                 }
             }
@@ -339,102 +385,214 @@ class Home {
     }
 
     @Composable
-    fun CourseCard(
+    fun SectionHeader(title: String, subtitle: String) {
+        Column(modifier = Modifier.padding(vertical = 12.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(end = 100.dp),
+                thickness = 2.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+            )
+        }
+    }
+
+    @Composable
+    fun EmptyStateMessage() {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Home,
+                    contentDescription = "No courses",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(64.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "No courses found",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Explore available courses to start learning",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun EnhancedCourseCard(
         courseTitle: String,
         instructor: String,
         studentCount: Int,
         progress: Float?,
-        enroll: Boolean?,
+        isEnrollable: Boolean,
         onClick: () -> Unit = {},
-        Onenroll: () -> Unit = {}
+        onEnroll: () -> Unit = {}
     ) {
         Card(
+            onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 16.dp)
-                .clickable { onClick() },
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                .padding(vertical = 8.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.anuj_grover),
-                        contentDescription = "Instructor Avatar",
+                    // Course Category Indicator
+                    Box(
                         modifier = Modifier
-                            .size(60.dp)
-                            .clip(CircleShape)
-                            .background(Color.LightGray, shape = CircleShape)
-                    )
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.anuj_grover),
+                            contentDescription = "Course Image",
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(10.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
                     Spacer(modifier = Modifier.width(16.dp))
+
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = courseTitle,
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.primary
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        Text(
-                            text = instructor,
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.student),
-                                contentDescription = "Student Icon",
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Instructor",
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp)
                             )
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = " $studentCount",
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.titleSmall
+                                text = instructor,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
+                }
 
-                    Box(contentAlignment = Alignment.Center) {
-                        if (enroll == true) {
-                            Button(
-                                onClick = {
-                                    Onenroll()
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.surface
-                                ),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.student),
+                            contentDescription = "Student Count",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "$studentCount enrolled",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    if (isEnrollable) {
+                        Button(
+                            onClick = onEnroll,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = "Enroll Now",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    } else {
+                        progress?.let {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.size(48.dp)
+                                ) {
+                                    CircularProgressIndicator(
+                                        progress = { it / 100 },
+                                        modifier = Modifier.fillMaxSize(),
+                                        strokeWidth = 4.dp,
+                                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = "${it.toInt()}%",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Enrol",
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    style = MaterialTheme.typography.headlineSmall
+                                    text = "Continue Learning",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
-                        }
-                        progress?.let {
-                            CircularProgressIndicator(
-                                progress = { it / 100 },
-                                trackColor = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(60.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                strokeWidth = 8.dp,
-
-                                )
-                            Text(
-                                text = "${String.format("%.1f", it)}%",
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelLarge
-                            )
                         }
                     }
                 }
             }
         }
     }
-
     @Composable
     fun NavigationBox(
         pagerState: PagerState,
