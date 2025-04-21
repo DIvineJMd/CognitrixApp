@@ -103,7 +103,7 @@ class Home {
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             NavigationBox(pagerState, coroutineScope, 0, R.drawable.home_filled, R.drawable.home_outline, "Home")
-                            NavigationBox(pagerState, coroutineScope, 1, R.drawable.leaderboard_filled, R.drawable.leaderboard_outline, "Leaderboard")
+                            NavigationBox(pagerState, coroutineScope, 1, R.drawable.leaderboard_filled, R.drawable.leaderboard_outline, "Rank")
                             NavigationBox(pagerState, coroutineScope, 2, R.drawable.profile_filled, R.drawable.profile_outline, "Profile")
                         }
                     }
@@ -470,10 +470,10 @@ class Home {
 
                 AnimatedVisibility(
                     visible = pagerState.currentPage == pageIndex,
-                    enter = fadeIn(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)) +
-                            expandHorizontally(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
-                    exit = fadeOut(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)) +
-                            shrinkHorizontally(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+                    enter = fadeIn(animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) +
+                            expandHorizontally(animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+                    exit = fadeOut(animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) +
+                            shrinkHorizontally(animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy))
                 ) {
                     Text(
                         text = label,

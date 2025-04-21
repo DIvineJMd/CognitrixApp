@@ -355,7 +355,7 @@ class CoursePage {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(5.dp)
-                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                        ,
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                                 ) {
                                     Column {
@@ -455,12 +455,7 @@ class CoursePage {
                 }
             }
 
-            is Resource.Error -> TODO()
-            is Resource.Loading -> TODO()
-            is Resource.Success -> TODO()
-            is Resource.Error -> TODO()
-            is Resource.Loading -> TODO()
-            is Resource.Success -> TODO()
+
         }
     }
 
@@ -545,7 +540,6 @@ class CoursePage {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
-                .background(MaterialTheme.colorScheme.primaryContainer)
                 .clickable {
                     onVideoSelected(video._id)
                 },
