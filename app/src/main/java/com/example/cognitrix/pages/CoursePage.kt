@@ -53,14 +53,19 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.FullscreenListener
@@ -91,7 +96,7 @@ class CoursePage {
 
         Scaffold(
             modifier = Modifier.fillMaxSize()
-        //            topBar = {
+            //            topBar = {
 //                if (!isLandscape) {
 //                    TopAppBar(
 //                        title = {
@@ -272,9 +277,11 @@ class CoursePage {
 
                                                 1 -> {
                                                     Box(modifier = Modifier.fillMaxSize())
-                                                    {Lecture(courseData, onVideoSelected = {
-                                                        viewModel.fetchVideoDetails(context, it)
-                                                    }, viewModel, context)}
+                                                    {
+                                                        Lecture(courseData, onVideoSelected = {
+                                                            viewModel.fetchVideoDetails(context, it)
+                                                        }, viewModel, context)
+                                                    }
                                                 }
 
 
@@ -285,11 +292,21 @@ class CoursePage {
                                                     modifier = Modifier.fillMaxSize(),
                                                     onVideoSelected = { url ->
                                                         viewModel.fetchVideoDetails(context, url)
-                                                        viewModel.markWatched(context, url, onSuccess = {})
+                                                        viewModel.markWatched(
+                                                            context,
+                                                            url,
+                                                            onSuccess = {})
                                                     }
                                                 )
 
-                                                3 -> Text("To be Implemented")
+                                                3 -> {
+                                                    NotesScreen(
+                                                        viewModel = viewModel,
+                                                        context = context,
+                                                        videoId = data.id
+                                                    )
+                                                }
+
                                                 4 -> Text("Shared Notes Content")
                                             }
                                         }
@@ -354,8 +371,7 @@ class CoursePage {
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(5.dp)
-                                        ,
+                                        .padding(5.dp),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                                 ) {
                                     Column {
@@ -462,6 +478,7 @@ class CoursePage {
     @Composable
     fun RecommendationScreen(
         viewModel: CourseViewModel,
+        lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
         videoId: String,
         context: Context,
         modifier: Modifier = Modifier,
@@ -482,31 +499,67 @@ class CoursePage {
         }
 
         LaunchedEffect(videoId) {
+            Log.d("Fetchingdat", "first time")
             viewModel.loadRecommendations(videoId, context, true)
         }
-
+        DisposableEffect(lifecycleOwner) {
+            onDispose {
+                viewModel.reloadRecommendation()
+            }
+        }
         LaunchedEffect(shouldLoadMore.value) {
+            Log.d("Fetchingdat", "pagination time")
+
             if (shouldLoadMore.value && !isLoading) {
                 viewModel.loadRecommendations(videoId, context, false)
             }
         }
 
-        Box(modifier = modifier) {
+
+        Box(modifier = modifier.fillMaxSize()) {
             if (relatedVideos.isEmpty() && !isLoading) {
-                Text(
-                    text = "No recommendations available",
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp)
+                        .align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "No recommendations available",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Try watching more videos to get personalized recommendations",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(if (isLandscape) 3 else 2),
                     state = lazyState,
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(relatedVideos) { video ->
-                        VideoItem(video, context, onVideoSelected)
+                    items(relatedVideos.size) { index ->
+                        VideoItem(relatedVideos[index], context, onVideoSelected)
                     }
 
                     if (isLoading) {
@@ -530,63 +583,97 @@ class CoursePage {
         context: Context,
         onVideoSelected: (String) -> Unit
     ) {
-        // Extract videoId more robustly
         val videoId = extractVideoId(video.url)
         val thumbnailUrl = "https://img.youtube.com/vi/$videoId/0.jpg"
-        println(thumbnailUrl)
-        val color by remember { mutableStateOf(video.watched) }
-        // Card for the entire video item
+
+        val cardHeight = 280.dp
+        val thumbnailHeight = 140.dp
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .clickable {
-                    onVideoSelected(video._id)
-                },
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                .height(cardHeight)
+                .clickable { onVideoSelected(video._id) },
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(8.dp)
         ) {
-            // Column layout inside the Card
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp) // Add space between elements
+                modifier = Modifier.fillMaxSize()
             ) {
-                // Display the video thumbnail
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(thumbnailUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Thumbnail for ${video.title}",
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(6f / 5f)
-                )
-
-
-                Text(
-                    text = video.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Card(
-                    modifier = Modifier,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (color) Color(0xFF2E7D32) else Color(0xFFD32F2F)
+                        .height(thumbnailHeight)
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(thumbnailUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Thumbnail for ${video.title}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
+
+                    if (video.watched) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .size(24.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Watched",
+                                tint = Color.White,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(16.dp)
+                            )
+                        }
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp)
+                        .weight(1f),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (video.watched) "Watched" else "Not Watched",
+                        text = video.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(4.dp),
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
-                    )
+                            .padding(top = 8.dp)
+                            .height(24.dp)
+                            .background(
+                                color = if (video.watched)
+                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f)
+                                else
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                shape = RoundedCornerShape(4.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (video.watched) "Watched" else "Unwatched",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
@@ -599,24 +686,9 @@ class CoursePage {
             url.contains("youtube.com/embed/") -> url.substringAfter("embed/")
                 .takeWhile { it != '?' }
 
-            else -> url // Fallback to original URL if no match
+            else -> url
         }
     }
 }
 
 
-
-@Composable
-fun rememberCustomNestedScrollInteropConnection(): NestedScrollConnection {
-    return remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                return Offset.Zero
-            }
-
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                return available
-            }
-        }
-    }
-}

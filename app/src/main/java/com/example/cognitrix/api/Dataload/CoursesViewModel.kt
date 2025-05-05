@@ -6,12 +6,24 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cognitrix.api.Api_data.AddNoteRequest
 import com.example.cognitrix.api.Api_data.ApiClient
+import com.example.cognitrix.api.Api_data.Note
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class CourseViewModel : ViewModel() {
+    private val _notes = MutableLiveData<List<Note>>()
+    val notes: LiveData<List<Note>> = _notes
+
+    private val _noteError = MutableLiveData<String>()
+    val noteError: LiveData<String> = _noteError
+
+    private val _noteAddSuccess = MutableLiveData<Boolean>()
+    val noteAddSuccess: LiveData<Boolean> = _noteAddSuccess
+
 
     private val _ongoingCourses = MutableLiveData<List<Course>>()
     val ongoingCourses: LiveData<List<Course>> = _ongoingCourses
@@ -95,6 +107,54 @@ class CourseViewModel : ViewModel() {
             }
         }
     }
+    fun fetchNotes(context: Context, videoId: String) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context)
+                if (authToken != null) {
+                    val response = ApiClient.getInstance(authToken).getNotes(videoId)
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        _notes.postValue(response.body()?.notes ?: emptyList())
+                    } else {
+                        _noteError.postValue("Failed to fetch notes: ${response.message()}")
+                    }
+                } else {
+                    _noteError.postValue("Auth token missing")
+                }
+            } catch (e: Exception) {
+                _noteError.postValue("Error fetching notes: ${e.localizedMessage}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+    fun addNote(context: Context, videoId: String, title: String, content: String) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context)
+                if (authToken != null) {
+                    val request = AddNoteRequest(title, content)
+                    val response = ApiClient.getInstance(authToken).addNote(videoId, request)
+                    if (response.isSuccessful) {
+                        _noteAddSuccess.postValue(true)
+                        fetchNotes(context, videoId)
+                        delay(2000)
+                        _noteAddSuccess.postValue(false)
+                    } else {
+                        _noteError.postValue("Failed to add note: ${response.message()}")
+                    }
+                } else {
+                    _noteError.postValue("Auth token missing")
+                }
+            } catch (e: Exception) {
+                _noteError.postValue("Error adding note: ${e.localizedMessage}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
 
 
     fun unmarkWatched(context: Context, videoId: String,onSuccess: () -> Unit) {
@@ -121,6 +181,7 @@ class CourseViewModel : ViewModel() {
         }
     }
     fun fetchVideoDetails(context: Context, videoId: String) {
+
         _videoDetails.value = Resource.Loading()
         viewModelScope.launch {
             try {
@@ -128,6 +189,8 @@ class CourseViewModel : ViewModel() {
                 if (authToken != null) {
                     val response = ApiClient.getInstance(authToken).getVideoDetails(videoId)
                     if (response.isSuccessful && response.body()?.success == true) {
+                        Log.d("Fetchingdat","Reco: ${Resource.Success(response.body()!!.video)} ")
+
                         _videoDetails.postValue(Resource.Success(response.body()!!.video))
                     } else {
                         _Cerror.value = "Failed to fetch video details: ${response.message()}"
@@ -148,11 +211,11 @@ class CourseViewModel : ViewModel() {
     }
     // Function to fetch course details
     fun fetchCourseDetails(context: Context, courseId: String) {
+        Log.d("Fetchingdat","courseID: $courseId")
         _courseDetails.value = Resource.Loading()
         viewModelScope.launch {
             try {
                 val authToken = getAuthToken(context)
-                println("====> $authToken")
                 if (authToken != null) {
                     val response = ApiClient.getInstance(authToken).getCourseDetails(courseId)
                     if (response.isSuccessful && response.body()?.success == true) {
@@ -161,14 +224,12 @@ class CourseViewModel : ViewModel() {
 //                        println("======>"+response.body()!!.videos)
                     } else {
                         _courseDetails.postValue(Resource.Error("Error fetching course details: ${response.message()}"))
-                        println("Error fetching course details: ${response.message()}")
                     }
                 } else {
                     _courseDetails.postValue(Resource.Error("Auth token missing"))
                 }
             } catch (e: Exception) {
                 _courseDetails.postValue(Resource.Error("Exception: ${e.localizedMessage}"))
-                println("Exception: ${e.localizedMessage}")
             } finally {
                 _isLoading.value = false
             }
@@ -269,9 +330,12 @@ private val _relatedVideos = MutableLiveData<List<RecommendationVideo>>(emptyLis
     private var currentOffset = 0
     private val pageSize = 10
     private var hasMoreItems = true
-
+    fun reloadRecommendation(){
+        currentOffset = 0
+        hasMoreItems = true
+        _relatedVideos.value = emptyList()
+    }
     fun loadRecommendations(videoId: String, context: Context,reload:Boolean) {
-        // Prevent multiple simultaneous loading or when no more items
         if (_isLoading.value == true || !hasMoreItems) return
 
         _isLoading.value = true
@@ -281,6 +345,8 @@ private val _relatedVideos = MutableLiveData<List<RecommendationVideo>>(emptyLis
                     currentOffset = 0
                     hasMoreItems = true
                     _relatedVideos.value = emptyList()
+
+                    Log.d("Fetchingdat","${_relatedVideos.value}")
                 }
                 val authToken = getAuthToken(context)
                 val response = ApiClient.getInstance(authToken)
@@ -292,7 +358,6 @@ private val _relatedVideos = MutableLiveData<List<RecommendationVideo>>(emptyLis
                         if (it.success) {
                             val newVideos = it.relatedVideos
 
-                            // Update list
                             val currentList = _relatedVideos.value.orEmpty()
                             _relatedVideos.value = currentList + newVideos
 
@@ -304,7 +369,6 @@ private val _relatedVideos = MutableLiveData<List<RecommendationVideo>>(emptyLis
                         }
                     }
                 } else {
-                    // Handle API error
                     hasMoreItems = false
                 }
             } catch (e: Exception) {

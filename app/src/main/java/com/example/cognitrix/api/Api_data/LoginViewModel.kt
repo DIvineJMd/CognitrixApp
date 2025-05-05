@@ -18,7 +18,6 @@ sealed class Resource<out T> {
 }
 
 class LoginViewModel : ViewModel() {
-
     private val _loginState = MutableStateFlow<Resource<String>>(Resource.Loading)
     val loginState: StateFlow<Resource<String>> = _loginState.asStateFlow()
 
@@ -28,7 +27,7 @@ class LoginViewModel : ViewModel() {
         _loginState.value = Resource.Loading
         viewModelScope.launch {
             try {
-                val apiService = ApiClient.getInstance(null) // No token needed for login
+                val apiService = ApiClient.getInstance(null)
                 val response = apiService.login(LoginRequest(email, password)).awaitResponse()
                 if (response.isSuccessful) {
                     val loginResponse = response.body()

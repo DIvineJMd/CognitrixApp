@@ -59,6 +59,15 @@ interface ApiService {
 
     @PATCH("api/video/unwatch/{videoId}")
     suspend fun unwatchedVideo(@Path("videoId") videoId: String): Response<Void>
+
+    @GET("api/note/{videoId}")
+    suspend fun getNotes(@Path("videoId") videoId: String): Response<NotesResponse>
+    @POST("api/note/{videoId}")
+
+    suspend fun addNote(
+        @Path("videoId") videoId: String,
+        @Body note: AddNoteRequest
+    ): Response<Note>
 }
 
 object ApiClient {

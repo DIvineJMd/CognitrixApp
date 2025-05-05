@@ -150,8 +150,8 @@ class Home {
                             }
                         }
                         Box(
-                            modifier = Modifier.fillMaxHeight(), // Take full height for vertical centering
-                            contentAlignment = Alignment.CenterEnd // Align icons to the end and center vertically
+                            modifier = Modifier.fillMaxHeight(),
+                            contentAlignment = Alignment.CenterEnd
                         ) {
                             IconButton(onClick = { isPopupVisible = true }) {
                                 Icon(
@@ -363,7 +363,10 @@ class Home {
                                 studentCount = data.numEnrolledStudents,
                                 progress = data.progress?.toFloat(),
                                 isEnrollable = true,
-                                onClick = { navController.navigate("video") },
+                                onClick = {
+//                                    navController.navigate("video")
+                                          }
+                                ,
                                 onEnroll = {
                                     courseViewModel.enrollInCourse(context, data._id)
                                     courseViewModel.fetchOngoingCourses(context)
