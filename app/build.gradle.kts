@@ -6,15 +6,15 @@ plugins {
 }
 
 android {
-    namespace = "com.example.cognitrix"
+    namespace = "iiitd.cognitrix"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.cognitrix"
+        applicationId = "iiitd.cognitrix"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -43,13 +43,13 @@ android {
 }
 
 dependencies {
-//    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
-//    implementation("com.google.firebase:firebase-analytics")
-//    implementation("com.google.firebase:firebase-crashlytics")
-//    implementation("com.google.firebase:firebase-appdistribution-api-ktx:16.0.0-beta15")
-//    betaImplementation("com.google.firebase:firebase-appdistribution:16.0.0-beta15")
-
-//    classpath ("com.google.gms:google-services:4.4.2")
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
+    // TODO: Add the dependencies for Firebase products you want to use
+    // When using the BoM, don't specify versions in Firebase dependencies
+    implementation("com.google.firebase:firebase-analytics")
+    // Add the dependencies for any other desired Firebase products
+    // https://firebase.google.com/docs/android/setup#available-libraries
     implementation(libs.accompanist.pager)
     implementation(libs.accompanist.pager.indicators)
     implementation("io.coil-kt:coil-compose:2.7.0")

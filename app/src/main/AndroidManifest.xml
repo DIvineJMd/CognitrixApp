@@ -25,12 +25,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".pages.CourseActivity"
+        <activity
+            android:name=".pages.CourseActivity"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
             android:hardwareAccelerated="true"/>
-
-
-
+        <activity
+            android:name=".pages.ChatWebViewActivity"
+            android:hardwareAccelerated="true"
+            android:theme="@style/Theme.Cognitrix" />
 
     </application>
 
