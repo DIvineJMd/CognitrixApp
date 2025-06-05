@@ -21,9 +21,11 @@ import iiitd.cognitrix.R
 
 private val tint = Color(0xFFF6F5F8)
 private val white = Color(0xFFFFFFFF)
-private val darkTint = Color(0xFF565E6C)
+private val darkTint = Color(0xFF454B56)
 private val tealdark = Color(0xFF248888)
 private val teallight = Color(0xFF31B0B0)
+private val lightestTeal= Color(0xFFe0f2f1)
+private val darkgreen = Color(0xFF0D2D2D)
 private val gray = Color(0xFFB0BEC5)
 private val gray2 = Color(0xFF606368)
 private val gray3 = Color(0xFF3C4042)
@@ -36,10 +38,15 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = gray,//
     surface = tealdark,//
     onSurface = tint,
+    onSurfaceVariant = darkgreen,
+    surfaceVariant = darkTint,
+
     outline= Color(0xFF66B3FF),
-    onSurfaceVariant = gray3,
-    primaryContainer = gray2,//
+    primaryContainer = gray2,
+    onPrimaryContainer = lightestTeal,
     secondaryContainer = lightGray,
+//    tertiaryContainer = ,
+
     background = gray3
 )
 
@@ -48,12 +55,16 @@ private val LightColorScheme = lightColorScheme(
     secondary = black,//
     tertiary = gray,//
     surface = teallight,//
-    onSurface = white,
-    onSurfaceVariant = gray3,
-    outline= Color(0xFF0066CC),
+    onSurface = lightGray,
+    onSurfaceVariant = darkgreen,
+    surfaceVariant = Color(0xFFE5DDEA),
 
+    outline= Color(0xFF0066CC),
     primaryContainer = lightGray,//
+    onPrimaryContainer = darkgreen,
     secondaryContainer = lightGray,
+//    tertiaryContainer = ,
+
     background = white,
 
 )
@@ -148,7 +159,7 @@ fun CognitrixTheme(
         ),
         bodyMedium = TextStyle(
             fontFamily = sourceSansFontFamily,
-            fontWeight = FontWeight.Normal,  // Regular weight
+            fontWeight = FontWeight.Medium,  // Regular weight
             fontStyle = FontStyle.Normal,
             fontSize = 18.sp // Body text medium
         ),

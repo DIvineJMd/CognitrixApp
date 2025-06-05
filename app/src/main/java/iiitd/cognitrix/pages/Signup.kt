@@ -105,7 +105,7 @@ fun SignUpPage(navController: NavController) {
                 ) {
                     Text(
                         text = "Student",
-                        fontSize = 20.sp,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (isStudent) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.align(Alignment.Center)
@@ -129,7 +129,7 @@ fun SignUpPage(navController: NavController) {
                 ) {
                     Text(
                         text = "Professor",
-                        fontSize = 20.sp,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (!isStudent) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.align(Alignment.Center)
@@ -147,7 +147,7 @@ fun SignUpPage(navController: NavController) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 48.dp)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 60.dp)
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -227,9 +227,7 @@ fun SignUpPage(navController: NavController) {
                     ) {
                         Text("Sign Up",
                             color= MaterialTheme.colorScheme.onSurface,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            style = TextStyle(fontFamily = FontFamily.Default)
+                            style = MaterialTheme.typography.headlineMedium
                         )
                     }
 
@@ -242,14 +240,14 @@ fun SignUpPage(navController: NavController) {
                     ) {
                         Text(
                             text = "Already Registered? Please",
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
                             text = " Login",
                             textDecoration = TextDecoration.Underline,
                             color = MaterialTheme.colorScheme.outline,
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier
                                 .clickable {
                                     navController.navigate("login") // Navigate on click

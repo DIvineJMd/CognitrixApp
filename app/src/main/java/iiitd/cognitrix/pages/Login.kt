@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,16 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -47,7 +45,7 @@ fun LoginPage(viewModel: LoginViewModel,context:Context,navController: NavContro
         var email by rememberSaveable { mutableStateOf("") }
         var password by rememberSaveable { mutableStateOf("") }
         var isStudent by rememberSaveable { mutableStateOf(true) } // Toggle state for Student/Professor
-        var clicked by rememberSaveable { mutableStateOf(false) }
+        val loginState by viewModel.loginState.collectAsState()
 
         Column(
             modifier = Modifier
@@ -151,25 +149,64 @@ fun LoginPage(viewModel: LoginViewModel,context:Context,navController: NavContro
 //                            )
 //                        }
 //                    }
-                    if (clicked) {
-                        LoginAlertDialog(
-                            viewModel = viewModel,
-                            onDismiss = { clicked = false },
-                            navController = navController
-                        )
+
+                    // Login state handling
+                    when (loginState) {
+                        is Resource.Idle -> {
+                            // Show nothing when in idle state
+                        }
+                        is Resource.Loading -> {
+                            Row(
+                                modifier = Modifier.padding(top = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Hold On...",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                        is Resource.Success<*> -> {
+                            Text(
+                                text = (loginState as Resource.Success<String>).data,
+                                modifier = Modifier.padding(top = 16.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            // Navigate to home
+                            navController.navigate("home")
+                        }
+                        is Resource.Error -> {
+                            val errorMessage =
+                                (loginState as? Resource.Error)?.message?.let { msg ->
+                                    // Extract the main error message
+                                    val errorRegex = """"message":"(.*?)"""".toRegex()
+                                    val matchResult = errorRegex.find(msg)
+                                    matchResult?.groups?.get(1)?.value ?: "An error occurred"
+                                } ?: "An error occurred"
+                            Text(
+                                text = errorMessage,
+                                color = Color.Red,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 16.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
 
                     // Log In button
                     Button(
                         onClick = {
-                            clicked=true
                             viewModel.login(email, password, context)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 16.dp, bottom = 8.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
+                        enabled = loginState !is Resource.Loading
                     ) {
                         Text(
                             text = "Login",
@@ -253,7 +290,10 @@ fun InputField(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp))  // Set light gray background
+                .background(
+                    MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(8.dp)
+                )  // Set light gray background
                 .padding(),
             leadingIcon = {
                 Icon(
@@ -272,61 +312,19 @@ fun InputField(
                 }
             } else null,
             visualTransformation = if (heading == "Password" && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
-            colors = TextFieldDefaults.textFieldColors(
-                containerColor = Color.Transparent,  // No background for the container
+            colors = TextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.primary,
+                unfocusedTextColor = MaterialTheme.colorScheme.primary,
+                focusedContainerColor = Color.Transparent,  // No background for the container
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                cursorColor = MaterialTheme.colorScheme.primary,
                 focusedIndicatorColor = Color.Transparent,  // Remove the focused indicator
-                unfocusedIndicatorColor = Color.Transparent,  // Remove the unfocused indicator
-                cursorColor = MaterialTheme.colorScheme.primary,  // Set cursor color
+                unfocusedIndicatorColor = Color.Transparent,
             ),
             textStyle = MaterialTheme.typography.bodyLarge.copy(
                 color = MaterialTheme.colorScheme.primary
             )
         )
-    }
-}
-
-@Composable
-fun LoginAlertDialog(viewModel: LoginViewModel,  onDismiss: () -> Unit,navController: NavController) {
-    val loginState by viewModel.loginState.collectAsState()
-    Dialog(onDismissRequest = { onDismiss() }) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                when (loginState) {
-                    is Resource.Loading -> {
-                        Text(
-                            text = "Hold On...",
-                            textAlign = TextAlign.Center,
-                        )
-                        CircularProgressIndicator()
-                    }
-                    is Resource.Success<*> -> {
-                        Text(text = (loginState as Resource.Success<String>).data)
-                        onDismiss()
-                        navController.navigate("home")
-
-                    }
-                    is Resource.Error -> {
-                        val errorMessage = (loginState as? Resource.Error)?.message?.let { msg ->
-                            // Extract the main error message
-                            val errorRegex = """"message":"(.*?)"""".toRegex()
-                            val matchResult = errorRegex.find(msg)
-                            matchResult?.groups?.get(1)?.value ?: "An error occurred"
-                        } ?: "An error occurred"
-                        Text(text = errorMessage, color = Color.Red, fontWeight = FontWeight.Bold)
-                    }
-                    else -> {}
-                }
-            }
-        }
     }
 }

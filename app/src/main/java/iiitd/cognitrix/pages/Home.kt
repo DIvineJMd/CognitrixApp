@@ -3,6 +3,8 @@ package iiitd.cognitrix.pages
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -30,11 +32,13 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -43,12 +47,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.shadow
 import iiitd.cognitrix.R
 import iiitd.cognitrix.api.Api_data.LoginViewModel
 import iiitd.cognitrix.api.Dataload.CourseViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
+import kotlin.system.exitProcess
+import androidx.core.net.toUri
 
 class Home {
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
@@ -64,18 +71,34 @@ class Home {
         val coroutineScope = rememberCoroutineScope()
         val sharedPref = context.getSharedPreferences("AppData", Context.MODE_PRIVATE)
         val fullName = sharedPref.getString("fullName", null)
-        var isPopupVisible by remember { mutableStateOf(false) }
+        var isPopupVisible by rememberSaveable { mutableStateOf(false) }
         val sheetState = rememberModalBottomSheetState()
+
+        // Back press handling variables
+        var backPressedTime by remember { mutableStateOf(0L) }
+        var showExitToast by remember { mutableStateOf(false) }
+
+        // Handle back press
+        BackHandler {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - backPressedTime > 2000) {
+                backPressedTime = currentTime
+                showExitToast = true
+                Toast.makeText(context, "Press again to close Cognitrix", Toast.LENGTH_SHORT).show()
+            } else {
+                exitProcess(0)
+            }
+        }
 
         fun handleLogout() {
             // Clear login-related shared preferences
             sharedPref.edit { clear() }
 
-            // Reset login state in ViewModel if applicable
-//            loginviewmodel.logout()
+            // Reset login state in ViewModel
+            loginviewmodel.logout()
 
             navController.navigate("login") {
-                popUpTo("home") { inclusive = true }
+                popUpTo(0) { inclusive = true }
             }
         }
 
@@ -83,7 +106,7 @@ class Home {
             bottomBar = {
                 BottomAppBar(
                     modifier = Modifier
-                        .height(80.dp)
+                        .height(68.dp)
                         .border(
                             width = 1.dp,
                             color = MaterialTheme.colorScheme.tertiary,
@@ -94,8 +117,7 @@ class Home {
                 ) {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                            .fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         NavigationBox(
@@ -149,13 +171,34 @@ class Home {
                         containerColor = MaterialTheme.colorScheme.surface,
                         titleContentColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    modifier = Modifier.height(88.dp),
+                    modifier = Modifier.height(80.dp),
                     actions = {
                         Box(
                             modifier = Modifier.fillMaxHeight(), // Take full height for vertical centering
                             contentAlignment = Alignment.CenterEnd // Align icons to the end and center vertically
                         ) {
-                            IconButton(onClick = { 
+                            IconButton(onClick = {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    "https://forms.gle/ceX5XJ51BiT2k1wp9".toUri()
+                                ).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.report),
+                                    contentDescription = "Report Issues",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier.fillMaxHeight(), // Take full height for vertical centering
+                            contentAlignment = Alignment.CenterEnd // Align icons to the end and center vertically
+                        ) {
+                            IconButton(onClick = {
                                 val intent = Intent(context, ChatWebViewActivity::class.java).apply {
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
@@ -237,7 +280,7 @@ class Home {
             {
                 Text(
                     text = "Are you sure you want to logout?",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 22.sp,
                     modifier = Modifier.padding(top = 16.dp, bottom = 16.dp, start = 16.dp)
@@ -253,15 +296,14 @@ class Home {
                         .padding(horizontal = 16.dp, vertical = 2.dp),
                     colors = ButtonDefaults.textButtonColors(
                         containerColor = MaterialTheme.colorScheme.surface, // Set background color for button
-                        contentColor = MaterialTheme.colorScheme.onSurface // Set text color for button
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
                         "Confirm Logout",
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontSize = 18.sp
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
 
@@ -273,16 +315,15 @@ class Home {
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 1.dp),
                     colors = ButtonDefaults.textButtonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiary, // Set background color for button
-                        contentColor = MaterialTheme.colorScheme.primary // Set text color for button
+                        containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f), // Set background color for button
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
                         "Cancel",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontSize = 18.sp
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
@@ -295,7 +336,7 @@ class Home {
         navController: NavHostController,
         context: Context
     ) {
-        val dataload = courseViewModel.isLoading.observeAsState()
+        val dataload = courseViewModel.isLoading.observeAsState(false)
         val courses = courseViewModel.ongoingCourses.observeAsState()
         val recourses = courseViewModel.remainingCourses.observeAsState()
 
@@ -305,18 +346,30 @@ class Home {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (dataload.value == true) {
+            // Show loading when actually loading OR when data is null (initial state)
+            if (dataload.value == true || (courses.value == null && recourses.value == null)) {
                 item {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
+                            .height(300.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(48.dp),
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Loading Courses...",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             } else {
@@ -380,8 +433,8 @@ class Home {
                     }
                 }
 
-                // No courses state
-                if (courses.value.isNullOrEmpty() && recourses.value.isNullOrEmpty()) {
+                // No courses state - only show when data is loaded but empty
+                if (courses.value?.isEmpty() == true && recourses.value?.isEmpty() == true) {
                     item {
                         EmptyStateMessage()
                     }
@@ -402,7 +455,7 @@ class Home {
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(8.dp))
             HorizontalDivider(
@@ -427,7 +480,7 @@ class Home {
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Home,
+                    painter = painterResource(id = R.drawable.home_outline),
                     contentDescription = "No courses",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(64.dp)
@@ -436,13 +489,13 @@ class Home {
                 Text(
                     text = "No courses found",
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Explore available courses to start learning",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center
                 )
             }
@@ -464,12 +517,16 @@ class Home {
             onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
+                .shadow(
+                    elevation = 20.dp,
+                    shape = RoundedCornerShape(8.dp)
+                )
                 .padding(vertical = 8.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+//            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(
@@ -481,7 +538,7 @@ class Home {
                             .size(56.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(
-                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.secondaryContainer,
                                 shape = RoundedCornerShape(12.dp)
                             ),
                         contentAlignment = Alignment.Center
@@ -507,25 +564,14 @@ class Home {
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
-
                         Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = instructor,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Instructor",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = instructor,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                 }
 
@@ -547,6 +593,7 @@ class Home {
                         Text(
                             text = "$studentCount enrolled",
                             style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -576,21 +623,23 @@ class Home {
                                     CircularProgressIndicator(
                                         progress = { it / 100 },
                                         modifier = Modifier.fillMaxSize(),
-                                        strokeWidth = 4.dp,
-                                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                        color = MaterialTheme.colorScheme.primary
+                                        strokeWidth = 5.dp,
+                                        trackColor = Color(0xFFCDD3D3),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Text(
                                         text = "${it.toInt()}%",
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Continue Learning",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }

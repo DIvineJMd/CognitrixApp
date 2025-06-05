@@ -35,6 +35,8 @@ import iiitd.cognitrix.R
 import iiitd.cognitrix.ui.theme.bronze
 import iiitd.cognitrix.ui.theme.gold
 import iiitd.cognitrix.ui.theme.silver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.draw.shadow
 
 class Leaderboard {
 
@@ -47,7 +49,7 @@ class Leaderboard {
     ) {
         // Define state variables
         val selectedRecord = remember { mutableStateOf<LeaderData?>(null) }
-        val showDialog = remember { mutableStateOf(false) }
+        val showDialog = rememberSaveable { mutableStateOf(false) }
         val leaderboard = courseViewModel.leaderboard.observeAsState(emptyList())
         val leaderboardError = courseViewModel.leaderboardError.observeAsState("")
 
@@ -105,12 +107,11 @@ class Leaderboard {
                 ) {
                     // Top 10 Card
                     item {
-                        DisplayTopTen(leaderboard.value.take(10)) { record ->
+                        DisplayTopUsers(leaderboard.value.take(20)) { record ->
                             selectedRecord.value = record
                             showDialog.value = true
                         }
-
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
                     // Sticky header - will appear below Top 3 initially and then stick when scrolled
@@ -118,37 +119,42 @@ class Leaderboard {
                     stickyHeader {
                         Card(
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .height(52.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
                             ),
                             shape = RoundedCornerShape(8.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .fillMaxHeight()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = "Rank",
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f),
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
                                     text = "Name",
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(3f),
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
                                     text = "Coins",
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f),
                                     textAlign = TextAlign.End,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                         }
@@ -183,7 +189,7 @@ class Leaderboard {
                             targetValue = when {
                                 isCurrentUser -> 8.dp
                                 record.rank <= 3 -> 6.dp
-                                else -> 2.dp
+                                else -> 4.dp
                             },
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -194,7 +200,11 @@ class Leaderboard {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(60.dp) // Add this line to set card height
                                 .padding(vertical = 4.dp)
+//                                .shadow(
+//                                    elevation = 4.dp,
+//                                    shape = RoundedCornerShape(4.dp))
                                 .clickable {
                                     selectedRecord.value = record; showDialog.value = true
                                 },
@@ -212,12 +222,13 @@ class Leaderboard {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .fillMaxHeight()
+                                    .padding(horizontal = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
                                     modifier = Modifier.weight(1f),
-                                    contentAlignment = Alignment.Center
+                                    contentAlignment = Alignment.CenterStart
                                 ) {
                                     Box(
                                         modifier = Modifier
@@ -228,13 +239,14 @@ class Leaderboard {
                                                     1 -> gold
                                                     2 -> silver
                                                     3 -> bronze
-                                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                                    else -> (MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                                                 }
                                             ),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = record.rank.toString(),
+                                            style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.secondary
                                         )
@@ -243,9 +255,10 @@ class Leaderboard {
 
                                 Text(
                                     text = record.fullName,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.weight(3f),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.weight(4f),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -257,14 +270,16 @@ class Leaderboard {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "${record.coins}",
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        text = "${record.coins} ",
+                                        style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.secondary
                                     )
-                                    Text(
-                                        text = " 🪙",
-                                        fontSize = 16.sp
+                                    Icon(
+                                        painter = painterResource(R.drawable.coin),
+                                        contentDescription = "Coin",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = Color.Unspecified
                                     )
                                 }
                             }
@@ -283,6 +298,7 @@ class Leaderboard {
                         Icon(
                             painter = painterResource(R.drawable.account_circle),
                             contentDescription = "Profile Icon",
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(120.dp)
                         )
                     },
@@ -301,7 +317,7 @@ class Leaderboard {
                         ) {
                             LeaderboardDetailItem("Rank", "#${record.rank}")
                             LeaderboardDetailItem("Coins", "${record.coins}")
-                            LeaderboardDetailItem("Badges", "\uD83E\uDD47 ${record.badge}")
+                            LeaderboardDetailItem("Badges", "\uD83C\uDF96\uFE0F ${record.badge}")
                             LeaderboardDetailItem("Courses", "${record.ongoingCourses.size}")
                         }
                     },
@@ -312,7 +328,12 @@ class Leaderboard {
                                 containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text("Close")
+                            Text(
+                                "Close",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.background
+                            )
                         }
                     },
                     containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -332,13 +353,15 @@ class Leaderboard {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.weight(1f)
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.End
             )
@@ -346,17 +369,21 @@ class Leaderboard {
     }
 
     @Composable
-    fun DisplayTopTen(
+    fun DisplayTopUsers(
         topUsers: List<LeaderData>,
         onUserClick: (LeaderData) -> Unit
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+//                .shadow(
+//                    elevation = 4.dp,
+//                    shape = RoundedCornerShape(4.dp))
                 .padding(vertical = 8.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                containerColor = MaterialTheme.colorScheme.primaryContainer
             ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
             Column(
@@ -426,7 +453,7 @@ class Leaderboard {
                                 ) {
                                     Text(
                                         text = "${user.rank}",
-                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        color = MaterialTheme.colorScheme.background,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp
                                     )
@@ -438,8 +465,8 @@ class Leaderboard {
                             // User Name
                             Text(
                                 text = user.fullName,
+                                style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                fontSize = 12.sp,
                                 textAlign = TextAlign.Center,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
@@ -456,14 +483,16 @@ class Leaderboard {
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = "${user.coins}",
+                                    text = "${user.coins} ",
+                                    style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontSize = 11.sp
+                                    color = MaterialTheme.colorScheme.secondary,
                                 )
-                                Text(
-                                    text = "🪙",
-                                    fontSize = 11.sp
+                                Icon(
+                                    painter = painterResource(R.drawable.coin),
+                                    contentDescription = "Coin",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = Color.Unspecified
                                 )
                             }
                         }

@@ -1,78 +1,56 @@
 package iiitd.cognitrix.pages
 
-import android.R
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.app.Dialog
 import android.content.Context
-import android.content.pm.ActivityInfo
 import android.content.res.Configuration
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
-import android.view.View
-import android.view.ViewGroup
-import android.widget.FrameLayout
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
-import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import androidx.compose.runtime.livedata.observeAsState
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.FullscreenListener
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import iiitd.cognitrix.api.Dataload.CourseDetailsResponse
 import iiitd.cognitrix.api.Dataload.CourseViewModel
 import iiitd.cognitrix.api.Dataload.RecommendationVideo
-import iiitd.cognitrix.api.Dataload.Resource
 import iiitd.cognitrix.api.Dataload.VideoDetail
-import okhttp3.internal.wait
-
+import iiitd.cognitrix.api.Dataload.Resource
+import iiitd.cognitrix.ui.theme.green
+import iiitd.cognitrix.ui.theme.red
+import kotlinx.coroutines.launch
 
 class CoursePage {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -95,49 +73,41 @@ class CoursePage {
             viewModel.fetchCourseDetails(context = context, courseId)
         }
 
+        // Auto-start with first unwatched video or first video if all watched
+        LaunchedEffect(courseData) {
+            val currentCourseData = courseData
+            if (currentCourseData is Resource.Success) {
+                val videos = currentCourseData.data?.videos
+                if (!videos.isNullOrEmpty()) {
+                    // Find first unwatched video across all lectures
+                    var firstUnwatchedVideo: iiitd.cognitrix.api.Dataload.Video? = null
+                    var firstVideo: iiitd.cognitrix.api.Dataload.Video? = null
+
+                    for ((_, videoList) in videos) {
+                        for (video in videoList) {
+                            if (firstVideo == null) {
+                                firstVideo = video
+                            }
+                            if (!video.watched && firstUnwatchedVideo == null) {
+                                firstUnwatchedVideo = video
+                                break
+                            }
+                        }
+                        if (firstUnwatchedVideo != null) break
+                    }
+
+                    val videoToStart = firstUnwatchedVideo ?: firstVideo
+                    videoToStart?.let {
+                        viewModel.fetchVideoDetails(context, it.id)
+                    }
+                }
+            }
+        }
+
         Scaffold(
             modifier = Modifier.fillMaxSize()
-            //            topBar = {
-//                if (!isLandscape) {
-//                    TopAppBar(
-//                        title = {
-//                            Text(
-//                                modifier = Modifier.padding(horizontal = 2.dp),
-//                                text = "Course",
-//                                fontWeight = FontWeight.Bold
-//                            )
-//                        },
-//                        scrollBehavior = scrollBehavior,
-//                        colors = TopAppBarDefaults.topAppBarColors(
-//                            containerColor = MaterialTheme.colorScheme.surface,
-//                            titleContentColor = MaterialTheme.colorScheme.onSurface
-//                        ),
-//                        navigationIcon = {
-//                            IconButton(onClick = { navController.navigateUp() }) {
-//                                Icon(
-//                                    Icons.Default.Home,
-//                                    contentDescription = "Home",
-//                                    tint = MaterialTheme.colorScheme.onSurface
-//                                )
-//                            }
-//                        },
-//                        actions = {
-//                            IconButton(onClick = { /* List click */ }) {
-//                                Icon(
-//                                    Icons.AutoMirrored.Filled.List,
-//                                    contentDescription = "Bell",
-//                                    tint = MaterialTheme.colorScheme.onSurface
-//                                )
-//                            }
-//                        }
-//                    )
-//                }
-//            }
         ) { paddingValues ->
             val videoData by viewModel.videoDetails.observeAsState(Resource.Loading())
-//            var videoid by remember { mutableStateOf("") }
-//            var player: YouTubePlayer? = null
-//            val activity = LocalContext.current as Activity
             var isFullscreen by remember { mutableStateOf(false) }
 
             Column(
@@ -161,13 +131,6 @@ class CoursePage {
 
                     is Resource.Success -> {
                         val data = (videoData as Resource.Success<VideoDetail>).data
-//                        videoid = data.url.substringAfter("youtu.be/")
-//                        YouTubePlayerScreen(
-//                            modifier = Modifier
-//                                .fillMaxWidth()
-//                                .height(250.dp),
-//                            videoId = videoid
-//                        )
 
                         if (!isFullscreen) {
                             Log.d("Fullscreen", "Not Fullscreen : ${!isFullscreen}")
@@ -179,14 +142,13 @@ class CoursePage {
                                 Text(
                                     text = data.title,
                                     style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
                                 )
-//                                Spacer(modifier = Modifier.height(8.dp))
                                 Button(
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 16.dp, bottom = 8.dp),
+                                        .fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
                                     onClick = {
                                         data.nextVideo?.let { nextVideo ->
@@ -197,7 +159,8 @@ class CoursePage {
                                     Text(
                                         text = "Next Video",
                                         color = MaterialTheme.colorScheme.onSurface,
-                                        style = MaterialTheme.typography.headlineMedium
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 }
                             }
@@ -241,7 +204,7 @@ class CoursePage {
                                             Text(
                                                 text = tab,
                                                 fontWeight = FontWeight.SemiBold,
-                                                color = if (pagerState.currentPage == index) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                color = if (pagerState.currentPage == index) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                                                 fontSize = 16.sp,
                                                 modifier = Modifier.padding(vertical = 12.dp),
                                                 maxLines = 1,
@@ -271,6 +234,7 @@ class CoursePage {
                                                 0 -> {
                                                     Text(
                                                         text = "In this video, the following topics have been discussed: ${data.description}",
+                                                        style = MaterialTheme.typography.bodyMedium,
                                                         modifier = Modifier.padding(vertical = 16.dp),
                                                         overflow = TextOverflow.Visible,
                                                     )
@@ -308,7 +272,10 @@ class CoursePage {
                                                     )
                                                 }
 
-                                                4 -> Text("Shared Notes Content")
+                                                4 -> Text(
+                                                    text="No Notes Approved by the Professor",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    modifier = Modifier.padding(vertical = 16.dp))
                                             }
                                         }
                                     }
@@ -373,13 +340,33 @@ class CoursePage {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(5.dp),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    colors= CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    )
                                 ) {
                                     Column {
+                                        val allVideosWatched = videoList.all { it.watched }
+
                                         Text(
-                                            text = "Lecture $lectureNumber",
+                                            text = buildAnnotatedString {
+                                                append("Lecture $lectureNumber")
+                                                if (allVideosWatched) {
+                                                    withStyle(
+                                                        style = SpanStyle(
+                                                            fontStyle = FontStyle.Italic,
+                                                            fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
+                                                            fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                                                            color = MaterialTheme.colorScheme.secondary
+                                                        )
+                                                    ) {
+                                                        append(" - Completed")
+                                                    }
+                                                }
+                                            },
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.Black,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.secondary,
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable { expanded = !expanded }
@@ -388,7 +375,19 @@ class CoursePage {
 
                                         AnimatedVisibility(visible = expanded) {
                                             Column {
-                                                videoList.forEach { video ->
+                                                videoList.forEachIndexed { index, video ->
+                                                    if (index > 0) {
+                                                        HorizontalDivider(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(
+                                                                    vertical = 3.dp,
+                                                                    horizontal = 2.dp
+                                                                ),
+                                                            thickness = 1.dp,
+                                                            color = MaterialTheme.colorScheme.tertiary
+                                                        )
+                                                    }
                                                     Card(
                                                         Modifier
                                                             .padding(5.dp)
@@ -405,17 +404,15 @@ class CoursePage {
                                                                 }
                                                                 onVideoSelected(video.id)
                                                             },
-
+                                                        colors = CardDefaults.cardColors(
+                                                            containerColor = Color.Transparent
+                                                        )
                                                         ) {
                                                         Row(
                                                             verticalAlignment = Alignment.CenterVertically,
                                                             horizontalArrangement = Arrangement.Start
                                                         ) {
-                                                            var check by remember {
-                                                                mutableStateOf(
-                                                                    video.watched
-                                                                )
-                                                            }
+                                                            var check by remember {mutableStateOf(video.watched)}
 
                                                             Checkbox(
                                                                 checked = check,
@@ -437,13 +434,16 @@ class CoursePage {
                                                                                     false
                                                                             })
                                                                     }
-                                                                }
+                                                                },
+                                                                colors = CheckboxDefaults.colors(
+                                                                    checkedColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                                                )
                                                             )
 
                                                             Text(
                                                                 text = "${video.videoNumber}. ${video.title} - ${video.duration}",
                                                                 style = MaterialTheme.typography.bodyMedium,
-                                                                color = Color.Black,
+                                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                                                                 modifier = Modifier.padding(
                                                                     start = 20.dp,
                                                                     top = 4.dp,
@@ -453,13 +453,6 @@ class CoursePage {
                                                         }
 
                                                     }
-                                                    HorizontalDivider(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .padding(vertical = 3.dp),
-                                                        thickness = 1.dp,
-                                                        color = Color.LightGray
-                                                    )
                                                 }
 
                                             }
@@ -529,7 +522,7 @@ class CoursePage {
                 ) {
                     Icon(
                         imageVector = Icons.Default.Info,
-                        contentDescription = null,
+                        contentDescription = "null icon",
                         modifier = Modifier.size(64.dp),
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
                     )
@@ -596,6 +589,9 @@ class CoursePage {
                 .height(cardHeight)
                 .clickable { onVideoSelected(video._id) },
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ),
             shape = RoundedCornerShape(8.dp)
         ) {
             Column(
@@ -658,19 +654,20 @@ class CoursePage {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp)
+                            .clip(RoundedCornerShape(16.dp))
                             .height(24.dp)
                             .background(
                                 color = if (video.watched)
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f)
+                                    green
                                 else
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                    red,
                                 shape = RoundedCornerShape(4.dp)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = if (video.watched) "Watched" else "Unwatched",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Medium
                         )

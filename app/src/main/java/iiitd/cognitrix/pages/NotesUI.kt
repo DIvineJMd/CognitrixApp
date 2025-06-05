@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,27 +24,29 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,11 +54,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.compose.foundation.layout.size
 import iiitd.cognitrix.api.Api_data.Note
 import iiitd.cognitrix.api.Dataload.CourseViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+fun formatDate(dateString: String): String {
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        val outputFormat = SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.US)
+        val date = inputFormat.parse(dateString)
+        outputFormat.format(date ?: Date())
+    } catch (e: Exception) {
+        dateString
+    }
+}
 
 @Composable
 fun NotesScreen(
@@ -68,9 +84,9 @@ fun NotesScreen(
     val noteError by viewModel.noteError.observeAsState()
     val noteAdded by viewModel.noteAddSuccess.observeAsState()
 
-    var showAddNoteForm by remember { mutableStateOf(false) }
-    var title by remember { mutableStateOf("") }
-    var content by remember { mutableStateOf("") }
+    var showAddNoteForm by rememberSaveable { mutableStateOf(false) }
+    var title by rememberSaveable { mutableStateOf("") }
+    var content by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(videoId) {
         viewModel.fetchNotes(context, videoId)
@@ -78,11 +94,9 @@ fun NotesScreen(
 
     LaunchedEffect(noteAdded) {
         if (noteAdded == true) {
-            Log.d("ffkgh","hgfikuyhfg")
             viewModel.fetchNotes(context, videoId)
             showAddNoteForm = false
         }
-
     }
 
     Scaffold(
@@ -92,7 +106,11 @@ fun NotesScreen(
                     onClick = { showAddNoteForm = true },
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Note")
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add Note",
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
             }
         }
@@ -101,15 +119,7 @@ fun NotesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
         ) {
-            Text(
-                "Video Notes",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
             if (isLoading) {
                 Box(
                     modifier = Modifier
@@ -127,19 +137,23 @@ fun NotesScreen(
                 EmptyNotesPlaceholder(onClick = { showAddNoteForm = true }
                 )
             } else {
-                Text(
-                    "${notes.size} note${if (notes.size != 1) "s" else ""}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "${notes.size} note${if (notes.size != 1) "s" else ""}",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     items(notes) { note ->
                         NoteCard(note = note)
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
@@ -178,45 +192,33 @@ fun EmptyNotesPlaceholder(onClick: () -> Unit) {
     ) {
         Column(
             modifier = Modifier
-                .padding(24.dp)
+                .padding(12.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                Icons.Default.Edit,
-                contentDescription = null,
-                modifier = Modifier.height(60.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+//            Icon(
+//                Icons.Default.AddCircle,
+//                contentDescription = null,
+//                modifier = Modifier.height(60.dp),
+//                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+//            )
+//
+//            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                "No notes yet",
-                style = MaterialTheme.typography.titleLarge,
+                "No notes Added yet",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Medium
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
-                "Create your first note for this video by clicking the button below",
+                "Create your first note for this video by clicking the Add Button",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(onClick = onClick) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text("Create Note")
-            }
         }
     }
 }
@@ -234,35 +236,40 @@ fun NoteCard(note: Note) {
             Text(
                 note.title,
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier
-                    .padding(vertical = 8.dp)
                     .clip(RoundedCornerShape(1.dp)),
                 thickness = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 note.content,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 4.dp),
-                maxLines = 5,
-                overflow = TextOverflow.Ellipsis
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(vertical = 8.dp)
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                "Created: ${note.createdAt}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.End)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Status: ${note.status}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    "Created: ${formatDate(note.createdAt)}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -279,41 +286,110 @@ fun AddNoteForm(
 ) {
     Surface(
         modifier = Modifier
-            .fillMaxWidth().verticalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            .fillMaxWidth()
+            .fillMaxHeight(),
+        color = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
         ) {
             Text(
                 "Add New Note",
+                color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(vertical = 4.dp)
             )
 
             OutlinedTextField(
                 value = title,
-                onValueChange = onTitleChange,
+                onValueChange = { newValue ->
+                    if (newValue.length <= 50) {
+                        onTitleChange(newValue)
+                    }
+                },
                 label = { Text("Title") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor =  MaterialTheme.colorScheme.tertiary,
+                    focusedLabelColor =  MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor =  MaterialTheme.colorScheme.primary,
+                    cursorColor =  MaterialTheme.colorScheme.primary,
+                    focusedTextColor =  MaterialTheme.colorScheme.primary,
+                    unfocusedTextColor =  MaterialTheme.colorScheme.primary,
+                ),
+                placeholder = {
+                    Text(
+                        "Enter title here",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f)
+                    )
+                },
+                supportingText = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            "${title.length}/50",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = content,
-                onValueChange = onContentChange,
+                onValueChange = { newValue ->
+                    if (newValue.length <= 500) {
+                        onContentChange(newValue)
+                    }
+                },
                 label = { Text("Content") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                maxLines = 6
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 3,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedTextColor = MaterialTheme.colorScheme.primary,
+                    unfocusedTextColor = MaterialTheme.colorScheme.primary,
+                ),
+                placeholder = {
+                    Text(
+                        "Enter content here",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f)
+                    )
+                },
+                supportingText = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            "${content.length}/500",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
             )
 
             error?.let {
@@ -331,16 +407,38 @@ fun AddNoteForm(
                     .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = onCancel) {
-                    Text("Cancel")
+                TextButton(
+                    onClick = onCancel,
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Text(
+                        text="Cancel",
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
 
                 Button(
                     onClick = onAddNote,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    ),
                     enabled = title.isNotBlank() && content.isNotBlank(),
+                    shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.padding(start = 8.dp)
                 ) {
-                    Text("Save Note")
+                    Text(
+                        text = "Save Note",
+                        color = if (title.isNotBlank() && content.isNotBlank())
+                            MaterialTheme.colorScheme.onSurface
+                        else
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
             }
         }

@@ -43,20 +43,21 @@ class Profile {
         val scrollState = rememberScrollState()
 
         Box(
-            modifier = modifier.fillMaxSize()
+            modifier.fillMaxSize()
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.surface,
-                                MaterialTheme.colorScheme.onSurface
-                            )
-                        )
-                    )
+                    .background(MaterialTheme.colorScheme.background)
+                // .background(
+                //     brush = Brush.verticalGradient(
+                //         colors = listOf(
+                //             MaterialTheme.colorScheme.surface,
+                //             MaterialTheme.colorScheme.onSurface
+                //         )
+                //     )
+                // )
             )
 
             // Main Content
@@ -75,7 +76,7 @@ class Profile {
                         4.dp,
                         MaterialTheme.colorScheme.surface
                     ),
-                    color = MaterialTheme.colorScheme.surface,
+                    color = MaterialTheme.colorScheme.primaryContainer,
                     shadowElevation = 8.dp
                 ) {
                     Image(
@@ -96,7 +97,8 @@ class Profile {
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -105,9 +107,9 @@ class Profile {
                         // Name
                         Text(
                             text = userData?.fullName?.takeIf { it.isNotBlank() } ?: "Name not available",
-                            fontSize = 24.sp,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.secondary,
                         )
 
                         // Email
@@ -118,13 +120,14 @@ class Profile {
                             Icon(
                                 imageVector = Icons.Filled.Email,
                                 contentDescription = "Email",
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
                                 text = userData?.email?.takeIf { it.isNotBlank() } ?: "Email not available",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.padding(start = 4.dp)
                             )
                         }
@@ -132,7 +135,8 @@ class Profile {
                         HorizontalDivider(
                             modifier = Modifier
                                 .padding(vertical = 16.dp, horizontal = 32.dp)
-                                .fillMaxWidth()
+                                .fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.primary
                         )
 
                         Row(
@@ -169,13 +173,16 @@ class Profile {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Contact Information",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
@@ -211,17 +218,20 @@ class Profile {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Learning Progress",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
-//                        // Progress metrics would go here
+                        // Progress metrics would go here
 //                        Text(
 //                            text = "You've watched ${userData?.?.size ?: 0} videos",
 //                            style = MaterialTheme.typography.bodyMedium,
@@ -229,14 +239,14 @@ class Profile {
 //                        )
 
                         LinearProgressIndicator(
-                            progress = { 0.7f }, // Updated to use lambda function
+                            progress = { 0.2f }, // Updated to use lambda function
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp)
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(4.dp)),
                             color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            trackColor = MaterialTheme.colorScheme.background
                         )
 
                         Text(
@@ -314,9 +324,10 @@ class Profile {
                         modifier = Modifier.size(20.dp)
                     )
                 } else if (iconResId != null) {
-                    Image(
+                    Icon(
                         painter = painterResource(id = iconResId),
                         contentDescription = label,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -326,11 +337,13 @@ class Profile {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = value,
                     style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
                     color = valueColor
                 )
             }

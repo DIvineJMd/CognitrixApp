@@ -14,13 +14,14 @@ import iiitd.cognitrix.api.Api_data.LoginRequest
 import iiitd.cognitrix.api.Api_data.StudentInfoResponse
 
 sealed class Resource<out T> {
+    object Idle : Resource<Nothing>()
     object Loading : Resource<Nothing>()
     data class Success<out T>(val data: T) : Resource<T>()
     data class Error(val message: String) : Resource<Nothing>()
 }
 
 class LoginViewModel : ViewModel() {
-    private val _loginState = MutableStateFlow<Resource<String>>(Resource.Loading)
+    private val _loginState = MutableStateFlow<Resource<String>>(Resource.Idle)
     val loginState: StateFlow<Resource<String>> = _loginState.asStateFlow()
 
     private var authToken: String? = null
@@ -88,6 +89,7 @@ class LoginViewModel : ViewModel() {
             }
         }
     }
+
     fun getStudentInfo(context: Context): StudentInfoResponse? {
         val sharedPref = context.getSharedPreferences("AppData", Context.MODE_PRIVATE)
         return if (sharedPref.contains("fullName")) {
@@ -107,4 +109,8 @@ class LoginViewModel : ViewModel() {
         }
     }
 
+    fun logout() {
+        _loginState.value = Resource.Idle
+        authToken = null
+    }
 }
