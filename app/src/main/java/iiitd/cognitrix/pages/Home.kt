@@ -260,7 +260,8 @@ class Home {
                                 .padding()
                                 .fillMaxSize(),
                             context = context,
-                            viewModel = loginviewmodel
+                            viewModel = loginviewmodel,
+                            courseViewModel = courseViewModel
                         )
                     }
                 }

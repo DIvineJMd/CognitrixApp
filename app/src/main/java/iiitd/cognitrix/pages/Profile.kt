@@ -1,6 +1,7 @@
 package iiitd.cognitrix.pages
 
 import iiitd.cognitrix.api.Api_data.LoginViewModel
+import iiitd.cognitrix.api.Dataload.CourseViewModel
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.livedata.observeAsState
 import iiitd.cognitrix.R
 
 class Profile {
@@ -37,10 +40,38 @@ class Profile {
     fun ProfileScreen(
         modifier: Modifier = Modifier,
         context: Context,
-        viewModel: LoginViewModel
+        viewModel: LoginViewModel,
+        courseViewModel: CourseViewModel
     ) {
         val userData = viewModel.getStudentInfo(context)
         val scrollState = rememberScrollState()
+        val ongoingCourses = courseViewModel.ongoingCourses.observeAsState()
+
+        // Calculate total videos watched from ongoing courses
+        val totalVideosWatched = remember(ongoingCourses.value) {
+            val courses = ongoingCourses.value
+            if (courses.isNullOrEmpty()) {
+                0
+            } else {
+                courses.sumOf { it.numWatchedVideos ?: 0 }
+            }
+        }
+
+        // Calculate progress based on videos watched vs total videos
+        val videoProgress = remember(ongoingCourses.value) {
+            val courses = ongoingCourses.value
+            if (courses.isNullOrEmpty()) {
+                0f
+            } else {
+                val totalWatched = courses.sumOf { it.numWatchedVideos ?: 0 }
+                val totalVideos = courses.sumOf { it.numVideosInCourse }
+                if (totalVideos > 0) {
+                    (totalWatched.toFloat() / totalVideos.toFloat())
+                } else {
+                    0f
+                }
+            }
+        }
 
         Box(
             modifier.fillMaxSize()
@@ -160,7 +191,7 @@ class Profile {
                             StatItem(
                                 icon = painterResource(R.drawable.baseline_menu_book_24),
                                 label = "Courses",
-                                value =  "0"
+                                value = "${ongoingCourses.value?.size ?: 0}"
                             )
                         }
                     }
@@ -231,26 +262,27 @@ class Profile {
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
-                        // Progress metrics would go here
-//                        Text(
-//                            text = "You've watched ${userData?.?.size ?: 0} videos",
-//                            style = MaterialTheme.typography.bodyMedium,
-//                            modifier = Modifier.padding(vertical = 4.dp)
-//                        )
+                        // Progress metrics, using total videos watched
+                        Text(
+                            text = "Total videos watched: $totalVideosWatched",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
 
                         LinearProgressIndicator(
-                            progress = { 0.2f }, // Updated to use lambda function
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp)),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.background
+                        progress = { videoProgress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.background,
                         )
 
                         Text(
-                            text = "Keep going! You're making great progress.",
+                            text = "Keep learning and watching more videos!",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(top = 4.dp)
