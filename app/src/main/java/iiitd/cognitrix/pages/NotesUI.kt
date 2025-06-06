@@ -2,6 +2,7 @@ package iiitd.cognitrix.pages
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -22,15 +23,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -40,14 +40,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +51,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import iiitd.cognitrix.api.Api_data.Note
 import iiitd.cognitrix.api.Dataload.CourseViewModel
 import java.text.SimpleDateFormat
@@ -85,8 +85,19 @@ fun NotesScreen(
     val noteAdded by viewModel.noteAddSuccess.observeAsState()
 
     var showAddNoteForm by rememberSaveable { mutableStateOf(false) }
+    var showEditNoteForm by rememberSaveable { mutableStateOf(false) }
+    var editingNote by remember { mutableStateOf<Note?>(null) }
     var title by rememberSaveable { mutableStateOf("") }
-    var content by rememberSaveable { mutableStateOf("") }
+    var contents by rememberSaveable { mutableStateOf("") }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var noteToDelete by remember { mutableStateOf<Note?>(null) }
+    var showStatusDialog by remember { mutableStateOf(false) }
+    var statusNote by remember { mutableStateOf<Note?>(null) }
+
+    // Track previous notes count to detect successful operations
+    var previousNotesCount by remember { mutableStateOf(notes.size) }
+    var isEditOperation by remember { mutableStateOf(false) }
+    var isDeleteOperation by remember { mutableStateOf(false) }
 
     LaunchedEffect(videoId) {
         viewModel.fetchNotes(context, videoId)
@@ -96,18 +107,163 @@ fun NotesScreen(
         if (noteAdded == true) {
             viewModel.fetchNotes(context, videoId)
             showAddNoteForm = false
+            showEditNoteForm = false
+            editingNote = null
         }
+    }
+
+    // Monitor notes changes for edit/delete success detection
+    LaunchedEffect(notes) {
+        if (isEditOperation && !isLoading) {
+            // Edit was successful - show toast and hide form
+            Toast.makeText(context, "Note edited successfully", Toast.LENGTH_SHORT).show()
+            showEditNoteForm = false
+            editingNote = null
+            title = ""
+            contents = ""
+            isEditOperation = false
+        }
+
+        if (isDeleteOperation && notes.size < previousNotesCount && !isLoading) {
+            // Delete was successful - show toast
+            Toast.makeText(context, "Note deleted successfully", Toast.LENGTH_SHORT).show()
+            isDeleteOperation = false
+        }
+
+        previousNotesCount = notes.size
+    }
+
+    // Show error toast when noteError changes
+    LaunchedEffect(noteError) {
+        noteError?.let { error ->
+            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Status change confirmation dialog
+    if (showStatusDialog && statusNote != null) {
+        val note = statusNote!!
+        val isPrivate = note.status.lowercase() == "private"
+
+        AlertDialog(
+            onDismissRequest = { showStatusDialog = false },
+            title = {
+                Text(
+                    text = if (isPrivate) "Request to Make Note Public?" else "Withdraw Request?",
+                    color = MaterialTheme.colorScheme.secondary,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            },
+            text = {
+                Text(
+                    text = if (isPrivate)
+                        "This note will be sent for review to the professor and will be made public if approved."
+                    else
+                        "Withdraw request to professor to make this note public?",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Normal
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        statusNote?.let { note ->
+                            viewModel.requestNoteStatusChange(context, note._id, videoId)
+                        }
+                        showStatusDialog = false
+                        statusNote = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                    )
+                ) {
+                    Text(
+                        if (isPrivate) "Request" else "Withdraw",
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showStatusDialog = false
+                        statusNote = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                    )
+                ) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.secondary)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog && noteToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = {
+                Text(
+                    text = "Delete Note",
+                    color = MaterialTheme.colorScheme.secondary,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete this note? This action cannot be undone.",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Normal
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        noteToDelete?.let { note ->
+                            isDeleteOperation = true
+                            viewModel.deleteNote(context, note._id, videoId)
+                        }
+                        showDeleteDialog = false
+                        noteToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                    )
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.secondary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                    )) {
+                    Text("Cancel", color =MaterialTheme.colorScheme.secondary)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
     }
 
     Scaffold(
         floatingActionButton = {
-            if (!showAddNoteForm) {
+            if (!showAddNoteForm && !showEditNoteForm) {
                 FloatingActionButton(
                     onClick = { showAddNoteForm = true },
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Icon(
-                        Icons.Default.Add,
+                        imageVector = Icons.Default.Add,
                         contentDescription = "Add Note",
                         modifier = Modifier.size(32.dp)
                     )
@@ -133,9 +289,8 @@ fun NotesScreen(
                         Text("Loading notes...", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
-            } else if (notes.isEmpty() && !showAddNoteForm) {
-                EmptyNotesPlaceholder(onClick = { showAddNoteForm = true }
-                )
+            } else if (notes.isEmpty() && !showAddNoteForm && !showEditNoteForm) {
+                EmptyNotesPlaceholder(onClick = { showAddNoteForm = true })
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
@@ -150,7 +305,23 @@ fun NotesScreen(
                         )
                     }
                     items(notes) { note ->
-                        NoteCard(note = note)
+                        NoteCard(
+                            note = note,
+                            onEdit = { noteToEdit ->
+                                editingNote = noteToEdit
+                                title = noteToEdit.title
+                                contents = noteToEdit.content
+                                showEditNoteForm = true
+                            },
+                            onDelete = { note ->
+                                noteToDelete = note
+                                showDeleteDialog = true
+                            },
+                            onStatusClick = { note ->
+                                statusNote = note
+                                showStatusDialog = true
+                            }
+                        )
                     }
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -166,17 +337,45 @@ fun NotesScreen(
                 AddNoteForm(
                     title = title,
                     onTitleChange = { title = it },
-                    content = content,
-                    onContentChange = { content = it },
+                    content = contents,
+                    onContentChange = { contents = it },
                     onAddNote = {
-                        viewModel.addNote(context, videoId, title, content)
+                        viewModel.addNote(context, videoId, title, contents)
                     },
                     onCancel = {
                         showAddNoteForm = false
                         title = ""
-                        content = ""
+                        contents = ""
                     },
-                    error = noteError
+                    error = noteError,
+                    isEditing = false
+                )
+            }
+
+            AnimatedVisibility(
+                visible = showEditNoteForm,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                AddNoteForm(
+                    title = title,
+                    onTitleChange = { title = it },
+                    content = contents,
+                    onContentChange = { contents = it },
+                    onAddNote = {
+                        editingNote?.let { note ->
+                            isEditOperation = true
+                            viewModel.editNote(context, note._id, title, contents, videoId)
+                        }
+                    },
+                    onCancel = {
+                        showEditNoteForm = false
+                        editingNote = null
+                        title = ""
+                        contents = ""
+                    },
+                    error = noteError,
+                    isEditing = true
                 )
             }
         }
@@ -224,7 +423,12 @@ fun EmptyNotesPlaceholder(onClick: () -> Unit) {
 }
 
 @Composable
-fun NoteCard(note: Note) {
+fun NoteCard(
+    note: Note,
+    onEdit: (Note) -> Unit,
+    onDelete: (Note) -> Unit,
+    onStatusClick: (Note) -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -233,12 +437,49 @@ fun NoteCard(note: Note) {
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                note.title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    note.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Row {
+                    TextButton(
+                        onClick = { onStatusClick(note) },
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Text(
+                            note.status,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                    IconButton(onClick = { onEdit(note) }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Note",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = { onDelete(note) }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Note",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                }
+            }
 
             HorizontalDivider(
                 modifier = Modifier
@@ -282,7 +523,8 @@ fun AddNoteForm(
     onContentChange: (String) -> Unit,
     onAddNote: () -> Unit,
     onCancel: () -> Unit,
-    error: String?
+    error: String?,
+    isEditing: Boolean = false
 ) {
     Surface(
         modifier = Modifier
@@ -297,7 +539,7 @@ fun AddNoteForm(
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                "Add New Note",
+                if (isEditing) "Edit Note" else "Add New Note",
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
@@ -432,7 +674,7 @@ fun AddNoteForm(
                     modifier = Modifier.padding(start = 8.dp)
                 ) {
                     Text(
-                        text = "Save Note",
+                        text = if (isEditing) "Update Note" else "Save Note",
                         color = if (title.isNotBlank() && content.isNotBlank())
                             MaterialTheme.colorScheme.onSurface
                         else

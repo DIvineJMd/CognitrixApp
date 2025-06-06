@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -46,8 +48,8 @@ import coil.request.ImageRequest
 import iiitd.cognitrix.api.Dataload.CourseDetailsResponse
 import iiitd.cognitrix.api.Dataload.CourseViewModel
 import iiitd.cognitrix.api.Dataload.RecommendationVideo
-import iiitd.cognitrix.api.Dataload.VideoDetail
 import iiitd.cognitrix.api.Dataload.Resource
+import iiitd.cognitrix.api.Dataload.VideoDetail
 import iiitd.cognitrix.ui.theme.green
 import iiitd.cognitrix.ui.theme.red
 import kotlinx.coroutines.launch
@@ -232,12 +234,66 @@ class CoursePage {
                                         ) {
                                             when (page) {
                                                 0 -> {
-                                                    Text(
-                                                        text = "In this video, the following topics have been discussed: ${data.description}",
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        modifier = Modifier.padding(vertical = 16.dp),
-                                                        overflow = TextOverflow.Visible,
-                                                    )
+                                                    Column(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 16.dp),
+                                                    ) {
+                                                        // Star rating component
+                                                        var rating by remember { mutableStateOf(0) }
+                                                        var isRated by remember {
+                                                            mutableStateOf(
+                                                                false
+                                                            )
+                                                        }
+
+                                                        // This is a placeholder for the API call to submit rating
+                                                        val onRatingChanged = { newRating: Int ->
+                                                            rating = newRating
+                                                            isRated = true
+                                                            viewModel.rateVideo(
+                                                                context = context,
+                                                                videoId = data.id,
+                                                                rating = newRating,
+                                                                onSuccess = {
+                                                                    isRated = true
+                                                                },
+                                                                onError = { error ->
+                                                                    // Handle error - could show a snackbar or toast
+                                                                    Log.e(
+                                                                        "Rating",
+                                                                        "Failed to rate video: $error"
+                                                                    )
+                                                                }
+                                                            )
+                                                        }
+
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(bottom = 16.dp),
+                                                            horizontalArrangement = Arrangement.Start,
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Text(
+                                                                text = "Rate this video: ",
+                                                                style = MaterialTheme.typography.bodyMedium,
+                                                                fontWeight = FontWeight.Medium,
+                                                                modifier = Modifier.padding(end = 8.dp)
+                                                            )
+
+                                                            StarRating(
+                                                                rating = rating,
+                                                                onRatingChanged = onRatingChanged
+                                                            )
+                                                        }
+
+                                                        Text(
+                                                            text = "In this video, the following topics have been discussed: ${data.description}",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            overflow = TextOverflow.Visible,
+                                                        )
+                                                    }
                                                 }
 
                                                 1 -> {
@@ -288,6 +344,27 @@ class CoursePage {
         }
     }
 
+    @Composable
+    fun StarRating(
+        rating: Int,
+        onRatingChanged: (Int) -> Unit,
+        modifier: Modifier = Modifier
+    ) {
+        Row(modifier = modifier) {
+            for (i in 1..5) {
+                Icon(
+                    imageVector = if (i <= rating) Icons.Filled.Star else Icons.Outlined.Star,
+                    contentDescription = "Star $i",
+                    tint = if (i <= rating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable {
+                            onRatingChanged(i)
+                        }
+                )
+            }
+        }
+    }
 
     @SuppressLint("RememberReturnType")
     @Composable
@@ -393,15 +470,6 @@ class CoursePage {
                                                             .padding(5.dp)
                                                             .fillMaxWidth()
                                                             .clickable {
-                                                                if (video.watched.not()) {
-                                                                    viewModel.markWatched(
-                                                                        context,
-                                                                        video.id,
-                                                                        onSuccess = {
-                                                                            video.watched = true
-                                                                        }
-                                                                    )
-                                                                }
                                                                 onVideoSelected(video.id)
                                                             },
                                                         colors = CardDefaults.cardColors(

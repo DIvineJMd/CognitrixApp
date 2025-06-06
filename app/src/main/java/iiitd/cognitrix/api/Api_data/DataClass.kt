@@ -33,3 +33,16 @@ data class AddNoteRequest(
     val title: String,
     val content: String
 )
+
+data class ChangeNoteStatusRequest(
+    val status: String
+)
+
+data class RateVideoRequest(
+    val rating: Int
+)
+
+data class RateVideoResponse(
+    val success: Boolean,
+    val message: String
+)

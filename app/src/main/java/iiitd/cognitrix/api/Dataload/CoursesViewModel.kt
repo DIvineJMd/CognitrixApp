@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import iiitd.cognitrix.api.Api_data.AddNoteRequest
 import iiitd.cognitrix.api.Api_data.ApiClient
 import iiitd.cognitrix.api.Api_data.Note
+import iiitd.cognitrix.api.Api_data.RateVideoRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -67,7 +68,7 @@ class CourseViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 // Handle any exceptions that occur during the API call
-                _leaderboardError.value = "Error: ${e.localizedMessage}"
+                _leaderboardError.value = "Error: ${e.message ?: "Unknown error"}"
             } finally {
                 _isLoading.value = false // End loading
             }
@@ -107,6 +108,7 @@ class CourseViewModel : ViewModel() {
             }
         }
     }
+
     fun fetchNotes(context: Context, videoId: String) {
         _isLoading.value = true
         viewModelScope.launch {
@@ -123,12 +125,13 @@ class CourseViewModel : ViewModel() {
                     _noteError.postValue("Auth token missing")
                 }
             } catch (e: Exception) {
-                _noteError.postValue("Error fetching notes: ${e.localizedMessage}")
+                _noteError.postValue("Error fetching notes: ${e.message ?: "Unknown error"}")
             } finally {
                 _isLoading.value = false
             }
         }
     }
+
     fun addNote(context: Context, videoId: String, title: String, content: String) {
         _isLoading.value = true
         viewModelScope.launch {
@@ -149,13 +152,102 @@ class CourseViewModel : ViewModel() {
                     _noteError.postValue("Auth token missing")
                 }
             } catch (e: Exception) {
-                _noteError.postValue("Error adding note: ${e.localizedMessage}")
+                _noteError.postValue("Error adding note: ${e.message ?: "Unknown error"}")
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
+    // ... existing code ...
+
+    fun editNote(context: Context, noteId: String, title: String, content: String, videoId: String) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context)
+                if (authToken != null) {
+                    val request = AddNoteRequest(title, content)
+                    val response = ApiClient.getInstance(authToken).editNote(noteId, request)
+                    if (response.isSuccessful) {
+                        fetchNotes(context, videoId)
+                    } else {
+                        _noteError.postValue("Failed to edit note: ${response.message()}")
+                    }
+                } else {
+                    _noteError.postValue("Auth token missing")
+                }
+            } catch (e: Exception) {
+                _noteError.postValue("Error editing note: ${e.message ?: "Unknown error"}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun deleteNote(context: Context, noteId: String, videoId: String) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context)
+                if (authToken != null) {
+                    val response = ApiClient.getInstance(authToken).deleteNote(noteId)
+                    if (response.isSuccessful) {
+                        fetchNotes(context, videoId)
+                    } else {
+                        _noteError.postValue("Failed to delete note: ${response.message()}")
+                    }
+                } else {
+                    _noteError.postValue("Auth token missing")
+                }
+            } catch (e: Exception) {
+                _noteError.postValue("Error deleting note: ${e.message ?: "Unknown error"}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun requestNoteStatusChange(context: Context, noteId: String, videoId: String) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context)
+                if (authToken != null) {
+                    // Find the current note to check its status
+                    val currentNotes = _notes.value?.toMutableList() ?: mutableListOf()
+                    val noteIndex = currentNotes.indexOfFirst { it._id == noteId }
+
+                    if (noteIndex >= 0) {
+                        val currentNote = currentNotes[noteIndex]
+                        val newStatus =
+                            if (currentNote.status.lowercase() == "private") "requested" else "private"
+
+                        // Update the note status locally
+                        currentNotes[noteIndex] = currentNote.copy(status = newStatus)
+                        _notes.postValue(currentNotes)
+                    }
+
+                    val response = ApiClient.getInstance(authToken).changeNoteStatus(noteId)
+                    if (response.isSuccessful) {
+                        // Status change was successful - the local update is already done above
+                    } else {
+                        _noteError.postValue("Failed to change note status: ${response.message()}")
+                        // Revert the local change on failure
+                        fetchNotes(context, videoId)
+                    }
+                } else {
+                    _noteError.postValue("Auth token missing")
+                }
+            } catch (e: Exception) {
+                _noteError.postValue("Error changing note status: ${e.message ?: "Unknown error"}")
+                // Revert the local change on error
+                fetchNotes(context, videoId)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
 
     fun unmarkWatched(context: Context, videoId: String,onSuccess: () -> Unit) {
         viewModelScope.launch {
@@ -180,6 +272,7 @@ class CourseViewModel : ViewModel() {
             }
         }
     }
+
     fun fetchVideoDetails(context: Context, videoId: String) {
 
         _videoDetails.value = Resource.Loading()
@@ -201,8 +294,8 @@ class CourseViewModel : ViewModel() {
                     _videoDetails.postValue(Resource.Error("Authorization token missing"))
                 }
             } catch (e: Exception) {
-                _Cerror.value = "Error: ${e.localizedMessage}"
-                _videoDetails.postValue(Resource.Error("Error: ${e.localizedMessage}"))
+                _Cerror.value = "Error: ${e.message ?: "Unknown error"}"
+                _videoDetails.postValue(Resource.Error("Error: ${e.message ?: "Unknown error"}"))
 
             } finally {
                 _isLoading.value = false
@@ -229,7 +322,7 @@ class CourseViewModel : ViewModel() {
                     _courseDetails.postValue(Resource.Error("Auth token missing"))
                 }
             } catch (e: Exception) {
-                _courseDetails.postValue(Resource.Error("Exception: ${e.localizedMessage}"))
+                _courseDetails.postValue(Resource.Error("Exception: ${e.message ?: "Unknown error"}"))
             } finally {
                 _isLoading.value = false
             }
@@ -296,12 +389,13 @@ class CourseViewModel : ViewModel() {
                     println("Error: ${response.message()}")
                 }
             } catch (e: Exception) {
-                _Cerror.postValue("Exception: ${e.localizedMessage}")
+                _Cerror.postValue("Exception: ${e.message ?: "Unknown error"}")
 
             }
         }
     }
-     fun enrollInCourse( context: Context,courseId: String) {
+
+    fun enrollInCourse( context: Context,courseId: String) {
          viewModelScope.launch {
              try {
                  val authToken = getAuthToken(context)
@@ -310,10 +404,10 @@ class CourseViewModel : ViewModel() {
                      val enrollResponse = response.body()
                      if (enrollResponse != null && enrollResponse.success) {
                      } else {
-//                         println("Enrollment failed: ${response.errorBody()?.string()}")
+    //                         println("Enrollment failed: ${response.errorBody()?.string()}")
                      }
                  } else {
-//                     println("API Error: ${response.errorBody()?.string()}")
+    //                     println("API Error: ${response.errorBody()?.string()}")
                  }
              } catch (e: Exception) {
                  println("Exception: ${e.message}")
@@ -321,7 +415,7 @@ class CourseViewModel : ViewModel() {
          }
     }
 //    =========================================================================
-private val _relatedVideos = MutableLiveData<List<RecommendationVideo>>(emptyList())
+    private val _relatedVideos = MutableLiveData<List<RecommendationVideo>>(emptyList())
     val relatedVideos: LiveData<List<RecommendationVideo>> = _relatedVideos
 
 //    private val _isLoadingRVideo = MutableLiveData(false)
@@ -335,6 +429,44 @@ private val _relatedVideos = MutableLiveData<List<RecommendationVideo>>(emptyLis
         hasMoreItems = true
         _relatedVideos.value = emptyList()
     }
+
+    fun rateVideo(
+        context: Context,
+        videoId: String,
+        rating: Int,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context)
+                if (authToken != null) {
+                    val request = RateVideoRequest(rating)
+                    val response = ApiClient.getInstance(authToken).rateVideo(videoId, request)
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        onSuccess()
+                        Log.d(
+                            "RateVideo",
+                            "Video rated successfully: $videoId with rating: $rating"
+                        )
+                    } else {
+                        val errorMessage = "Failed to rate video: ${response.message()}"
+                        onError(errorMessage)
+                        Log.e("RateVideo", errorMessage)
+                    }
+                } else {
+                    val errorMessage = "Auth token missing"
+                    onError(errorMessage)
+                    Log.e("RateVideo", errorMessage)
+                }
+            } catch (e: Exception) {
+                val errorMessage = "Error rating video: ${e.message ?: "Unknown error"}"
+                onError(errorMessage)
+                Log.e("RateVideo", "Error rating video", e)
+            }
+        }
+    }
+
     fun loadRecommendations(videoId: String, context: Context,reload:Boolean) {
         if (_isLoading.value == true || !hasMoreItems) return
 

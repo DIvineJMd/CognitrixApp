@@ -9,13 +9,14 @@ import iiitd.cognitrix.api.Dataload.RecommendationsResponse
 import iiitd.cognitrix.api.Dataload.VideoDetailsResponse
 import okhttp3.OkHttpClient
 import retrofit2.http.Body
-import retrofit2.http.POST
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -62,12 +63,30 @@ interface ApiService {
 
     @GET("api/note/{videoId}")
     suspend fun getNotes(@Path("videoId") videoId: String): Response<NotesResponse>
-    @POST("api/note/{videoId}")
 
+    @POST("api/note/{videoId}")
     suspend fun addNote(
         @Path("videoId") videoId: String,
         @Body note: AddNoteRequest
     ): Response<Note>
+
+    @PATCH("api/note/{noteId}")
+    suspend fun editNote(
+        @Path("noteId") noteId: String,
+        @Body note: AddNoteRequest
+    ): Response<Note>
+
+    @PATCH("api/note/{noteId}/request")
+    suspend fun changeNoteStatus(@Path("noteId") noteId: String): Response<Note>
+
+    @DELETE("api/note/{noteId}")
+    suspend fun deleteNote(@Path("noteId") noteId: String): Response<Void>
+
+    @POST("api/video/{videoId}/rate")
+    suspend fun rateVideo(
+        @Path("videoId") videoId: String,
+        @Body request: RateVideoRequest
+    ): Response<RateVideoResponse>
 }
 
 object ApiClient {
