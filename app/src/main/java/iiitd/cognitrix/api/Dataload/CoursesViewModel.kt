@@ -510,7 +510,12 @@ class CourseViewModel : ViewModel() {
         }
     }
 
-    fun enrollInCourse( context: Context,courseId: String) {
+    fun enrollInCourse(
+        context: Context,
+        courseId: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
          viewModelScope.launch {
              try {
                  val authToken = getAuthToken(context)
@@ -518,14 +523,15 @@ class CourseViewModel : ViewModel() {
                  if (response.isSuccessful) {
                      val enrollResponse = response.body()
                      if (enrollResponse != null && enrollResponse.success) {
+                         onSuccess()
                      } else {
-    //                         println("Enrollment failed: ${response.errorBody()?.string()}")
+                         onError("Enrollment failed: ${enrollResponse?.message ?: "Unknown error"}")
                      }
                  } else {
-    //                     println("API Error: ${response.errorBody()?.string()}")
+                     onError("API Error: ${response.message()}")
                  }
              } catch (e: Exception) {
-                 println("Exception: ${e.message}")
+                 onError("Exception: ${e.message}")
              }
          }
     }

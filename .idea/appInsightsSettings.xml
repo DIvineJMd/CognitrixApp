@@ -9,10 +9,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.example.cognitrix" />
-                  <option name="mobileSdkAppId" value="1:66214214487:android:b192f42e9f6a27d2d4dc12" />
-                  <option name="projectId" value="cognitrix-2025" />
-                  <option name="projectNumber" value="66214214487" />
+                  <option name="appId" value="iiitd.cognitrix" />
+                  <option name="mobileSdkAppId" value="1:653317766448:android:35ccba36a95dcd416f5cf5" />
+                  <option name="projectId" value="cognitrix-a7107" />
+                  <option name="projectNumber" value="653317766448" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

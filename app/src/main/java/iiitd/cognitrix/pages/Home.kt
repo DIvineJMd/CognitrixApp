@@ -427,9 +427,27 @@ class Home {
                                           }
                                 ,
                                 onEnroll = {
-                                    courseViewModel.enrollInCourse(context, data._id)
-                                    courseViewModel.fetchOngoingCourses(context)
-                                    courseViewModel.fetchRemainingCourses(context)
+                                    courseViewModel.enrollInCourse(
+                                        context = context,
+                                        courseId = data._id,
+                                        onSuccess = {
+                                            // Refresh the course lists after successful enrollment
+                                            courseViewModel.fetchOngoingCourses(context)
+                                            courseViewModel.fetchRemainingCourses(context)
+                                            Toast.makeText(
+                                                context,
+                                                "Successfully enrolled in ${data.title}",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        },
+                                        onError = { errorMessage ->
+                                            Toast.makeText(
+                                                context,
+                                                "Enrollment failed: $errorMessage",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    )
                                 }
                             )
                         }
