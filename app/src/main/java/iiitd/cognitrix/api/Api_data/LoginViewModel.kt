@@ -109,6 +109,15 @@ class LoginViewModel : ViewModel() {
         }
     }
 
+    fun refreshStudentInfo(context: Context) {
+        val sharedPref = context.getSharedPreferences("AppData", Context.MODE_PRIVATE)
+        val token = sharedPref.getString("auth_token", null)
+        if (token != null) {
+            authToken = token
+            fetchStudentInfo(context)
+        }
+    }
+
     fun logout() {
         _loginState.value = Resource.Idle
         authToken = null

@@ -65,7 +65,7 @@ import java.util.Locale
 fun formatDate(dateString: String): String {
     return try {
         val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
-        val outputFormat = SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.US)
+        val outputFormat = SimpleDateFormat("dd/MM/yy 'at' hh:mm a", Locale.US)
         val date = inputFormat.parse(dateString)
         outputFormat.format(date ?: Date())
     } catch (e: Exception) {
@@ -143,13 +143,35 @@ fun NotesScreen(
     // Status change confirmation dialog
     if (showStatusDialog && statusNote != null) {
         val note = statusNote!!
-        val isPrivate = note.status.lowercase() == "private"
+        val currentStatus = note.status.lowercase()
+        val nextStatus = when (currentStatus) {
+            "public", "requested" -> "private"
+            else -> "requested"
+        }
+
+        val dialogTitle = when (currentStatus) {
+            "public" -> "Make Note Private?"
+            "requested" -> "Withdraw Request?"
+            else -> "Request to Make Note Public?"
+        }
+
+        val dialogMessage = when (currentStatus) {
+            "public" -> "This note will be made private and only visible to you."
+            "requested" -> "Withdraw request to professor to make this note public?"
+            else -> "This note will be sent for review to the professor and will be made public if approved"
+        }
+
+        val confirmButtonText = when (currentStatus) {
+            "public" -> "Make Private"
+            "requested" -> "Withdraw"
+            else -> "Request"
+        }
 
         AlertDialog(
             onDismissRequest = { showStatusDialog = false },
             title = {
                 Text(
-                    text = if (isPrivate) "Request to Make Note Public?" else "Withdraw Request?",
+                    text = dialogTitle,
                     color = MaterialTheme.colorScheme.secondary,
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.Bold
@@ -158,10 +180,7 @@ fun NotesScreen(
             },
             text = {
                 Text(
-                    text = if (isPrivate)
-                        "This note will be sent for review to the professor and will be made public if approved."
-                    else
-                        "Withdraw request to professor to make this note public?",
+                    text = dialogMessage,
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Normal
@@ -182,7 +201,7 @@ fun NotesScreen(
                     )
                 ) {
                     Text(
-                        if (isPrivate) "Request" else "Withdraw",
+                        confirmButtonText,
                         color = MaterialTheme.colorScheme.secondary
                     )
                 }
@@ -455,12 +474,13 @@ fun NoteCard(
                         onClick = { onStatusClick(note) },
                         colors = ButtonDefaults.textButtonColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                        ),
+                        shape = RoundedCornerShape(10.dp)
                     ) {
                         Text(
                             note.status,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                     IconButton(onClick = { onEdit(note) }) {
@@ -501,7 +521,7 @@ fun NoteCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Status: ${note.status}",
+                    "Status: ${if (note.status.lowercase() == "requested") "Note is under review" else note.status}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

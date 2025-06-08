@@ -8,15 +8,16 @@ import iiitd.cognitrix.api.Dataload.LeaderResponse
 import iiitd.cognitrix.api.Dataload.RecommendationsResponse
 import iiitd.cognitrix.api.Dataload.VideoDetailsResponse
 import okhttp3.OkHttpClient
-import retrofit2.http.Body
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -76,17 +77,26 @@ interface ApiService {
         @Body note: AddNoteRequest
     ): Response<Note>
 
-    @PATCH("api/note/{noteId}/request")
-    suspend fun changeNoteStatus(@Path("noteId") noteId: String): Response<Note>
+    @PATCH("api/note/share/{noteId}")
+    suspend fun changeNoteStatus(
+        @Path("noteId") noteId: String,
+        @Body request: ChangeNoteStatusRequest
+    ): Response<Note>
 
     @DELETE("api/note/{noteId}")
     suspend fun deleteNote(@Path("noteId") noteId: String): Response<Void>
 
-    @POST("api/video/{videoId}/rate")
+    @GET("api/rating/{videoId}")
+    suspend fun getRatings(@Path("videoId") videoId: String): Response<RatingResponse>
+
+    @POST("api/rating/{videoId}")
     suspend fun rateVideo(
         @Path("videoId") videoId: String,
         @Body request: RateVideoRequest
     ): Response<RateVideoResponse>
+
+    @DELETE("api/rating/{videoId}")
+    suspend fun deleteRating(@Path("videoId") videoId: String): Response<Void>
 }
 
 object ApiClient {

@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import iiitd.cognitrix.api.Api_data.AddNoteRequest
 import iiitd.cognitrix.api.Api_data.ApiClient
+import iiitd.cognitrix.api.Api_data.ChangeNoteStatusRequest
 import iiitd.cognitrix.api.Api_data.Note
 import iiitd.cognitrix.api.Api_data.RateVideoRequest
 import kotlinx.coroutines.Dispatchers
@@ -83,6 +84,117 @@ class CourseViewModel : ViewModel() {
     val courseDetails: LiveData<Resource<CourseDetailsResponse?>> = _courseDetails
     private val _videoDetails = MutableLiveData<Resource<VideoDetail>>()
     val videoDetails: LiveData<Resource<VideoDetail>> = _videoDetails
+
+    // Rating state
+    private val _avgRating = MutableLiveData<Double>()
+    val avgRating: LiveData<Double> = _avgRating
+
+    private val _userRating = MutableLiveData<Int?>()
+    val userRating: LiveData<Int?> = _userRating
+
+    private val _ratingCount = MutableLiveData<Int>()
+    val ratingCount: LiveData<Int> = _ratingCount
+
+    fun reloadRecommendation() {
+        currentOffset = 0
+        hasMoreItems = true
+        _relatedVideos.value = emptyList()
+    }
+
+    fun fetchRatings(context: Context, videoId: String) {
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context)
+                if (authToken != null) {
+                    val response = ApiClient.getInstance(authToken).getRatings(videoId)
+                    if (response.isSuccessful) {
+                        response.body()?.let { ratingData ->
+                            _avgRating.postValue(ratingData.avgRating)
+                            _userRating.postValue(ratingData.userRating)
+                            _ratingCount.postValue(ratingData.count)
+                        }
+                    } else {
+                        Log.e("FetchRatings", "Failed to fetch ratings: ${response.message()}")
+                    }
+                } else {
+                    Log.e("FetchRatings", "Auth token missing")
+                }
+            } catch (e: Exception) {
+                Log.e("FetchRatings", "Error fetching ratings", e)
+            }
+        }
+    }
+
+    fun rateVideo(
+        context: Context,
+        videoId: String,
+        rating: Int,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context)
+                if (authToken != null) {
+                    val request = RateVideoRequest(rating)
+                    val response = ApiClient.getInstance(authToken).rateVideo(videoId, request)
+                    if (response.isSuccessful) {
+                        onSuccess()
+                        fetchRatings(context, videoId) // Refresh ratings after successful rating
+                        Log.d(
+                            "RateVideo",
+                            "Video rated successfully: $videoId with rating: $rating"
+                        )
+                    } else {
+                        val errorMessage = "Failed to rate video: ${response.message()}"
+                        onError(errorMessage)
+                        Log.e("RateVideo", errorMessage)
+                    }
+                } else {
+                    val errorMessage = "Auth token missing"
+                    onError(errorMessage)
+                    Log.e("RateVideo", errorMessage)
+                }
+            } catch (e: Exception) {
+                val errorMessage = "Error rating video: ${e.message ?: "Unknown error"}"
+                onError(errorMessage)
+                Log.e("RateVideo", "Error rating video", e)
+            }
+        }
+    }
+
+    fun deleteRating(
+        context: Context,
+        videoId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val authToken = getAuthToken(context)
+                if (authToken != null) {
+                    val response = ApiClient.getInstance(authToken).deleteRating(videoId)
+                    if (response.isSuccessful) {
+                        onSuccess()
+                        fetchRatings(context, videoId) // Refresh ratings after successful deletion
+                        Log.d("DeleteRating", "Rating deleted successfully: $videoId")
+                    } else {
+                        val errorMessage = "Failed to delete rating: ${response.message()}"
+                        onError(errorMessage)
+                        Log.e("DeleteRating", errorMessage)
+                    }
+                } else {
+                    val errorMessage = "Auth token missing"
+                    onError(errorMessage)
+                    Log.e("DeleteRating", errorMessage)
+                }
+            } catch (e: Exception) {
+                val errorMessage = "Error deleting rating: ${e.message ?: "Unknown error"}"
+                onError(errorMessage)
+                Log.e("DeleteRating", "Error deleting rating", e)
+            }
+        }
+    }
 
     fun markWatched(context: Context, videoId: String,onSuccess: () -> Unit) {
         viewModelScope.launch {
@@ -220,21 +332,25 @@ class CourseViewModel : ViewModel() {
 
                     if (noteIndex >= 0) {
                         val currentNote = currentNotes[noteIndex]
-                        val newStatus =
-                            if (currentNote.status.lowercase() == "private") "requested" else "private"
+                        val newStatus = when (currentNote.status.lowercase()) {
+                            "public", "requested" -> "private"
+                            else -> "requested" // private or any other status -> requested
+                        }
 
-                        // Update the note status locally
+                        // Update the note status locally first
                         currentNotes[noteIndex] = currentNote.copy(status = newStatus)
                         _notes.postValue(currentNotes)
-                    }
 
-                    val response = ApiClient.getInstance(authToken).changeNoteStatus(noteId)
-                    if (response.isSuccessful) {
-                        // Status change was successful - the local update is already done above
-                    } else {
-                        _noteError.postValue("Failed to change note status: ${response.message()}")
-                        // Revert the local change on failure
-                        fetchNotes(context, videoId)
+                        // Make the API call with the new status
+                        val request = ChangeNoteStatusRequest(newStatus)
+                        val response =
+                            ApiClient.getInstance(authToken).changeNoteStatus(noteId, request)
+
+                        if (!response.isSuccessful) {
+                            _noteError.postValue("Failed to change note status: ${response.message()}")
+                            // Revert the local change on failure
+                            fetchNotes(context, videoId)
+                        }
                     }
                 } else {
                     _noteError.postValue("Auth token missing")
@@ -350,7 +466,6 @@ class CourseViewModel : ViewModel() {
             }
         }
     }
-
     // Function to fetch remaining courses
     fun fetchRemainingCourses(context: Context) {
         _isLoading.value = true
@@ -424,48 +539,6 @@ class CourseViewModel : ViewModel() {
     private var currentOffset = 0
     private val pageSize = 10
     private var hasMoreItems = true
-    fun reloadRecommendation(){
-        currentOffset = 0
-        hasMoreItems = true
-        _relatedVideos.value = emptyList()
-    }
-
-    fun rateVideo(
-        context: Context,
-        videoId: String,
-        rating: Int,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    ) {
-        viewModelScope.launch {
-            try {
-                val authToken = getAuthToken(context)
-                if (authToken != null) {
-                    val request = RateVideoRequest(rating)
-                    val response = ApiClient.getInstance(authToken).rateVideo(videoId, request)
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        onSuccess()
-                        Log.d(
-                            "RateVideo",
-                            "Video rated successfully: $videoId with rating: $rating"
-                        )
-                    } else {
-                        val errorMessage = "Failed to rate video: ${response.message()}"
-                        onError(errorMessage)
-                        Log.e("RateVideo", errorMessage)
-                    }
-                } else {
-                    val errorMessage = "Auth token missing"
-                    onError(errorMessage)
-                    Log.e("RateVideo", errorMessage)
-                }
-            } catch (e: Exception) {
-                val errorMessage = "Error rating video: ${e.message ?: "Unknown error"}"
-                onError(errorMessage)
-                Log.e("RateVideo", "Error rating video", e)
-            }
-        }
-    }
 
     fun loadRecommendations(videoId: String, context: Context,reload:Boolean) {
         if (_isLoading.value == true || !hasMoreItems) return

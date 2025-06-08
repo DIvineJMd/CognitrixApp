@@ -37,6 +37,7 @@ import iiitd.cognitrix.ui.theme.gold
 import iiitd.cognitrix.ui.theme.silver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.draw.shadow
+import iiitd.cognitrix.api.Api_data.LoginViewModel
 
 class Leaderboard {
 
@@ -44,6 +45,7 @@ class Leaderboard {
     fun LeaderboardScreen(
         modifier: Modifier,
         courseViewModel: CourseViewModel,
+        loginViewModel: LoginViewModel,
         navController: NavHostController,
         context: Context
     ) {
@@ -59,6 +61,7 @@ class Leaderboard {
 
         LaunchedEffect(Unit) {
             courseViewModel.fetchLeaderboard(context)
+            loginViewModel.refreshStudentInfo(context)
         }
 
         Box(
@@ -212,9 +215,6 @@ class Leaderboard {
                             colors = CardDefaults.cardColors(
                                 containerColor = when {
                                     isCurrentUser -> MaterialTheme.colorScheme.surface
-                                    record.rank == 1 -> gold
-                                    record.rank == 2 -> silver
-                                    record.rank == 3 -> bronze
                                     else -> MaterialTheme.colorScheme.primaryContainer
                                 }
                             )
@@ -230,26 +230,38 @@ class Leaderboard {
                                     modifier = Modifier.weight(1f),
                                     contentAlignment = Alignment.CenterStart
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(CircleShape)
-                                            .background(
-                                                when (record.rank) {
-                                                    1 -> gold
-                                                    2 -> silver
-                                                    3 -> bronze
-                                                    else -> (MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                                                }
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = record.rank.toString(),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.secondary
+                                    if (record.rank <= 3) {
+                                        val badgeResource = when (record.rank) {
+                                            1 -> R.drawable.gold
+                                            2 -> R.drawable.silver
+                                            3 -> R.drawable.bronze
+                                            else -> R.drawable.coin
+                                        }
+                                        Icon(
+                                            painter = painterResource(badgeResource),
+                                            contentDescription = "Badge",
+                                            modifier = Modifier.size(36.dp),
+                                            tint = Color.Unspecified
                                         )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    MaterialTheme.colorScheme.primary.copy(
+                                                        alpha = 0.1f
+                                                    )
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = record.rank.toString(),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
                                     }
                                 }
 
@@ -410,53 +422,56 @@ class Leaderboard {
                                 .clickable { onUserClick(user) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                // Profile Image with gradient border for top 3
-                                val borderColor = when (user.rank) {
-                                    1 -> gold
-                                    2 -> silver
-                                    3 -> bronze
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
-                                }
-
+                                // Profile Image - remove gradient border for top 3
                                 Box(
                                     modifier = Modifier
                                         .size(64.dp)
                                         .clip(CircleShape)
-                                        .background(borderColor)
-                                        .padding(if (user.rank <= 3) 4.dp else 0.dp),
+                                        .background(MaterialTheme.colorScheme.tertiary),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.tertiary),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.AccountCircle,
-                                            contentDescription = "User Avatar",
-                                            modifier = Modifier.size(32.dp),
-                                            tint = MaterialTheme.colorScheme.onTertiary
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Filled.AccountCircle,
+                                        contentDescription = "User Avatar",
+                                        modifier = Modifier.size(32.dp),
+                                        tint = MaterialTheme.colorScheme.onTertiary
+                                    )
                                 }
 
-                                // Rank Badge
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary)
-                                        .align(Alignment.BottomEnd),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "${user.rank}",
-                                        color = MaterialTheme.colorScheme.background,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp
+                                // Medal for top 3, rank badge for others
+                                if (user.rank <= 3) {
+                                    val medalResource = when (user.rank) {
+                                        1 -> R.drawable.gold
+                                        2 -> R.drawable.silver
+                                        3 -> R.drawable.bronze
+                                        else -> R.drawable.coin// fallback, shouldn't happen
+                                    }
+
+                                    Icon(
+                                        painter = painterResource(medalResource),
+                                        contentDescription = "Medal",
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .align(Alignment.BottomEnd),
+                                        tint = Color.Unspecified
                                     )
+                                } else {
+                                    // Rank Badge for positions beyond top 3
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary)
+                                            .align(Alignment.BottomEnd),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "${user.rank}",
+                                            color = MaterialTheme.colorScheme.background,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        )
+                                    }
                                 }
                             }
 

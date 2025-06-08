@@ -3,9 +3,6 @@ package iiitd.cognitrix.pages
 import iiitd.cognitrix.api.Api_data.LoginViewModel
 import iiitd.cognitrix.api.Dataload.CourseViewModel
 import android.content.Context
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,22 +12,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.livedata.observeAsState
 import iiitd.cognitrix.R
 
@@ -46,6 +39,11 @@ class Profile {
         val userData = viewModel.getStudentInfo(context)
         val scrollState = rememberScrollState()
         val ongoingCourses = courseViewModel.ongoingCourses.observeAsState()
+
+        // Refresh student info when screen is composed
+        LaunchedEffect(Unit) {
+            viewModel.refreshStudentInfo(context)
+        }
 
         // Calculate total videos watched from ongoing courses
         val totalVideosWatched = remember(ongoingCourses.value) {
@@ -177,19 +175,19 @@ class Profile {
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             StatItem(
-                                icon = painterResource(R.drawable.trophy),
+                                icon = painterResource(R.drawable.rank),
                                 label = "Rank",
                                 value = if (userData?.rank != null && userData.rank != 0) "#${userData.rank}" else "N/A"
                             )
 
                             StatItem(
-                                icon = painterResource(R.drawable.baseline_star_24),
+                                icon = painterResource(R.drawable.badge),
                                 label = "Badge",
                                 value = userData?.badge?.takeIf { it.isNotBlank() } ?: "N/A"
-                            )
+                                                                                                          )
 
                             StatItem(
-                                icon = painterResource(R.drawable.baseline_menu_book_24),
+                                icon = painterResource(R.drawable.courses),
                                 label = "Courses",
                                 value = "${ongoingCourses.value?.size ?: 0}"
                             )

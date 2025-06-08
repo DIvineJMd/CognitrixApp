@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -180,7 +181,7 @@ class Home {
                             IconButton(onClick = {
                                 val intent = Intent(
                                     Intent.ACTION_VIEW,
-                                    "https://forms.gle/ceX5XJ51BiT2k1wp9".toUri()
+                                    "https://forms.gle/Ldviece7SoKM751w7".toUri()
                                 ).apply {
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
@@ -249,6 +250,7 @@ class Home {
                                 .padding()
                                 .fillMaxSize(),
                             courseViewModel,
+                            loginviewmodel,
                             navController,
                             context = context,
                         )
@@ -621,12 +623,13 @@ class Home {
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier.size(48.dp)
                                 ) {
+                                    val calculatedProgress = it / 100
                                     CircularProgressIndicator(
-                                        progress = { it / 100 },
+                                        progress = { calculatedProgress },
                                         modifier = Modifier.fillMaxSize(),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         strokeWidth = 5.dp,
-                                        trackColor = Color(0xFFCDD3D3),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        trackColor = MaterialTheme.colorScheme.tertiary
                                     )
                                     Text(
                                         text = "${it.toInt()}%",

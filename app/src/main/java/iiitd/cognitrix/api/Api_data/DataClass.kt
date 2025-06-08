@@ -46,3 +46,9 @@ data class RateVideoResponse(
     val success: Boolean,
     val message: String
 )
+
+data class RatingResponse(
+    val avgRating: Double,
+    val userRating: Int?,
+    val count: Int
+)

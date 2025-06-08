@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -51,6 +52,7 @@ import iiitd.cognitrix.api.Dataload.RecommendationVideo
 import iiitd.cognitrix.api.Dataload.Resource
 import iiitd.cognitrix.api.Dataload.VideoDetail
 import iiitd.cognitrix.ui.theme.green
+import iiitd.cognitrix.ui.theme.gold
 import iiitd.cognitrix.ui.theme.red
 import kotlinx.coroutines.launch
 
@@ -141,8 +143,34 @@ class CoursePage {
                                     .fillMaxWidth()
                                     .padding(horizontal = if (isLandscape) 32.dp else 16.dp)
                             ) {
+                                // Find current video info from course data
+                                val currentVideoInfo = remember(data.id) {
+                                    val currentCourseData = courseData
+                                    if (currentCourseData is Resource.Success) {
+                                        val videos = currentCourseData.data?.videos
+                                        if (!videos.isNullOrEmpty()) {
+                                            for ((lectureNumber, videoList) in videos) {
+                                                for (video in videoList) {
+                                                    if (video.id == data.id) {
+                                                        return@remember Triple(
+                                                            lectureNumber,
+                                                            video.videoNumber,
+                                                            true
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Triple("", "", false)
+                                }
+
                                 Text(
-                                    text = data.title,
+                                    text = if (currentVideoInfo.third) {
+                                        "L${currentVideoInfo.first} - V${currentVideoInfo.second}: ${data.title}"
+                                    } else {
+                                        data.title
+                                    },
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
@@ -240,52 +268,111 @@ class CoursePage {
                                                             .padding(vertical = 16.dp),
                                                     ) {
                                                         // Star rating component
-                                                        var rating by remember { mutableStateOf(0) }
-                                                        var isRated by remember {
-                                                            mutableStateOf(
-                                                                false
-                                                            )
+                                                        val avgRating by viewModel.avgRating.observeAsState(
+                                                            0.0
+                                                        )
+                                                        val userRating by viewModel.userRating.observeAsState()
+                                                        val ratingCount by viewModel.ratingCount.observeAsState(
+                                                            0
+                                                        )
+
+                                                        // Fetch ratings when video changes
+                                                        LaunchedEffect(data.id) {
+                                                            viewModel.fetchRatings(context, data.id)
                                                         }
 
-                                                        // This is a placeholder for the API call to submit rating
                                                         val onRatingChanged = { newRating: Int ->
-                                                            rating = newRating
-                                                            isRated = true
-                                                            viewModel.rateVideo(
-                                                                context = context,
-                                                                videoId = data.id,
-                                                                rating = newRating,
-                                                                onSuccess = {
-                                                                    isRated = true
-                                                                },
-                                                                onError = { error ->
-                                                                    // Handle error - could show a snackbar or toast
-                                                                    Log.e(
-                                                                        "Rating",
-                                                                        "Failed to rate video: $error"
+                                                            if (userRating == newRating) {
+                                                                // If clicking the same rating, delete it
+                                                                viewModel.deleteRating(
+                                                                    context = context,
+                                                                    videoId = data.id,
+                                                                    onSuccess = {
+                                                                        // Rating deleted successfully
+                                                                    },
+                                                                    onError = { error ->
+                                                                        Log.e(
+                                                                            "Rating",
+                                                                            "Failed to delete rating: $error"
+                                                                        )
+                                                                    }
+                                                                )
+                                                            } else {
+                                                                // Rate the video with new rating
+                                                                viewModel.rateVideo(
+                                                                    context = context,
+                                                                    videoId = data.id,
+                                                                    rating = newRating,
+                                                                    onSuccess = {
+                                                                        // Rating submitted successfully
+                                                                    },
+                                                                    onError = { error ->
+                                                                        Log.e(
+                                                                            "Rating",
+                                                                            "Failed to rate video: $error"
+                                                                        )
+                                                                    }
+                                                                )
+                                                            }
+                                                        }
+
+                                                        Column {
+                                                            // Rating display
+                                                            Row(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .padding(bottom = 8.dp),
+                                                                horizontalArrangement = Arrangement.Start,
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                Text(
+                                                                    text = "Average Rating: ${
+                                                                        "%.1f".format(
+                                                                            avgRating
+                                                                        )
+                                                                    }",
+                                                                    style = MaterialTheme.typography.bodyMedium,
+                                                                    fontWeight = FontWeight.Medium,
+                                                                    modifier = Modifier.padding(end = 16.dp)
+                                                                )
+                                                                Text(
+                                                                    text = "($ratingCount ${if (ratingCount == 1) "rating" else "ratings"})",
+                                                                    style = MaterialTheme.typography.labelLarge,
+                                                                    color = MaterialTheme.colorScheme.primary
+                                                                )
+                                                            }
+
+                                                            // User rating input
+                                                            Row(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .padding(bottom = 16.dp),
+                                                                horizontalArrangement = Arrangement.Start,
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                Text(
+                                                                    text = "Your rating: ",
+                                                                    style = MaterialTheme.typography.bodyMedium,
+                                                                    fontWeight = FontWeight.Medium,
+                                                                    modifier = Modifier.padding(end = 8.dp)
+                                                                )
+
+                                                                StarRating(
+                                                                    rating = userRating ?: 0,
+                                                                    onRatingChanged = onRatingChanged
+                                                                )
+
+                                                                if (userRating != null) {
+                                                                    Text(
+                                                                        text = " (Click same star to remove)",
+                                                                        style = MaterialTheme.typography.labelMedium,
+                                                                        color = MaterialTheme.colorScheme.primary,
+                                                                        modifier = Modifier.padding(
+                                                                            start = 8.dp
+                                                                        )
                                                                     )
                                                                 }
-                                                            )
-                                                        }
-
-                                                        Row(
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .padding(bottom = 16.dp),
-                                                            horizontalArrangement = Arrangement.Start,
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            Text(
-                                                                text = "Rate this video: ",
-                                                                style = MaterialTheme.typography.bodyMedium,
-                                                                fontWeight = FontWeight.Medium,
-                                                                modifier = Modifier.padding(end = 8.dp)
-                                                            )
-
-                                                            StarRating(
-                                                                rating = rating,
-                                                                onRatingChanged = onRatingChanged
-                                                            )
+                                                            }
                                                         }
 
                                                         Text(
@@ -301,7 +388,11 @@ class CoursePage {
                                                     {
                                                         Lecture(courseData, onVideoSelected = {
                                                             viewModel.fetchVideoDetails(context, it)
-                                                        }, viewModel, context)
+                                                        },
+                                                            viewModel,
+                                                            context,
+                                                            currentVideoId = data.id
+                                                        )
                                                     }
                                                 }
 
@@ -355,7 +446,7 @@ class CoursePage {
                 Icon(
                     imageVector = if (i <= rating) Icons.Filled.Star else Icons.Outlined.Star,
                     contentDescription = "Star $i",
-                    tint = if (i <= rating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (i <= rating) gold else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                     modifier = Modifier
                         .size(24.dp)
                         .clickable {
@@ -373,6 +464,7 @@ class CoursePage {
         onVideoSelected: (String) -> Unit,
         viewModel: CourseViewModel,
         context: Context,
+        currentVideoId: String? = null
     ) {
         when (courseData) {
             is Resource.Loading -> {
@@ -403,7 +495,28 @@ class CoursePage {
                             .wrapContentSize()
                     )
                 } else {
+                    val listState = rememberLazyListState()
+
+                    // Find the index of the lecture containing the current video
+                    val currentLectureIndex = remember(currentVideoId) {
+                        if (currentVideoId != null) {
+                            videos.entries.indexOfFirst { (_, videoList) ->
+                                videoList.any { video -> video.id == currentVideoId }
+                            }
+                        } else {
+                            -1
+                        }
+                    }
+
+                    // Auto-scroll to current lecture
+                    LaunchedEffect(currentLectureIndex) {
+                        if (currentLectureIndex >= 0) {
+                            listState.animateScrollToItem(currentLectureIndex)
+                        }
+                    }
+
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .fillMaxSize()
 
@@ -411,7 +524,13 @@ class CoursePage {
                     {
                         videos.forEach { (lectureNumber, videoList) ->
                             item {
-                                var expanded by remember { mutableStateOf(false) }
+                                var expanded by remember {
+                                    if (currentVideoId != null) {
+                                        mutableStateOf(videoList.any { video -> video.id == currentVideoId })
+                                    } else {
+                                        mutableStateOf(false)
+                                    }
+                                }
 
                                 Card(
                                     modifier = Modifier
