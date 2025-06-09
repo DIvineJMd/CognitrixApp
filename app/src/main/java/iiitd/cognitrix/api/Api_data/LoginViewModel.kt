@@ -12,6 +12,7 @@ import android.content.Context
 import iiitd.cognitrix.api.Api_data.ApiClient
 import iiitd.cognitrix.api.Api_data.LoginRequest
 import iiitd.cognitrix.api.Api_data.StudentInfoResponse
+import iiitd.cognitrix.api.Api_data.SignupRequest
 
 sealed class Resource<out T> {
     object Idle : Resource<Nothing>()
@@ -23,6 +24,9 @@ sealed class Resource<out T> {
 class LoginViewModel : ViewModel() {
     private val _loginState = MutableStateFlow<Resource<String>>(Resource.Idle)
     val loginState: StateFlow<Resource<String>> = _loginState.asStateFlow()
+
+    private val _signupState = MutableStateFlow<Resource<String>>(Resource.Idle)
+    val signupState: StateFlow<Resource<String>> = _signupState.asStateFlow()
 
     private var authToken: String? = null
 
@@ -121,5 +125,64 @@ class LoginViewModel : ViewModel() {
     fun logout() {
         _loginState.value = Resource.Idle
         authToken = null
+    }
+
+    fun resetLoginState() {
+        _loginState.value = Resource.Idle
+    }
+
+    fun signup(
+        fullName: String,
+        email: String,
+        password: String,
+        phoneNumber: String,
+        discordId: String,
+        role: String
+    ) {
+        _signupState.value = Resource.Loading
+        viewModelScope.launch {
+            try {
+                val apiService = ApiClient.getInstance(null)
+                val response = apiService.signup(
+                    SignupRequest(fullName, email, password, phoneNumber, discordId, role)
+                ).awaitResponse()
+
+                if (response.isSuccessful) {
+                    val signupResponse = response.body()
+                    if (signupResponse != null && signupResponse.success) {
+                        _signupState.value = Resource.Success("User created successfully")
+                    } else {
+                        _signupState.value = Resource.Error("Sign up failed: Invalid data")
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("Signup", "Error response: $errorBody")
+
+                    // Parse error message from response
+                    val errorMessage = errorBody?.let { body ->
+                        try {
+                            val jsonObject = org.json.JSONObject(body)
+                            val errorObject = jsonObject.optJSONObject("error")
+                            val message = errorObject?.optString("message") ?: "Sign up failed"
+
+                            // If message is "400", show the status code instead
+                            if (message == "400" || message == "401" || message == "403" || message == "404" || message == "500") {
+                                "Error: ${response.code()}"
+
+                            } else {
+                                message
+                            }
+                        } catch (e: Exception) {
+                            "Sign up failed: ${e.message}"
+                        }
+                    } ?: "Sign up failed"
+
+                    _signupState.value = Resource.Error(errorMessage)
+                }
+            } catch (e: Exception) {
+                Log.e("Signup", "Exception: ${e.message}")
+                _signupState.value = Resource.Error("Exception: ${e.message}")
+            }
+        }
     }
 }

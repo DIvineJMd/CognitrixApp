@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("signup") {
-                            SignUpPage(navController)
+                            SignUpPage(navController, loginViewModel)
                         }
                         composable(
                             route = "Lecture/{courseId}",

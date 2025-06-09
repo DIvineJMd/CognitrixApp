@@ -3,6 +3,7 @@ package iiitd.cognitrix.pages
 import iiitd.cognitrix.api.Api_data.LoginViewModel
 import iiitd.cognitrix.api.Api_data.Resource
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,6 +49,11 @@ fun LoginPage(viewModel: LoginViewModel,context:Context,navController: NavContro
         var password by rememberSaveable { mutableStateOf("") }
         var isStudent by rememberSaveable { mutableStateOf(true) } // Toggle state for Student/Professor
         val loginState by viewModel.loginState.collectAsState()
+
+        // Reset login state when entering the login page
+        LaunchedEffect(Unit) {
+            viewModel.resetLoginState()
+        }
 
         Column(
             modifier = Modifier
@@ -179,6 +187,9 @@ fun LoginPage(viewModel: LoginViewModel,context:Context,navController: NavContro
                             navController.navigate("home")
                         }
                         is Resource.Error -> {
+                            LaunchedEffect(loginState) {
+                                Toast.makeText(context, "Login Failed", Toast.LENGTH_SHORT).show()
+                            }
                             val errorMessage =
                                 (loginState as? Resource.Error)?.message?.let { msg ->
                                     // Extract the main error message
@@ -189,7 +200,7 @@ fun LoginPage(viewModel: LoginViewModel,context:Context,navController: NavContro
                             Text(
                                 text = errorMessage,
                                 color = Color.Red,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(top = 16.dp),
                                 style = MaterialTheme.typography.bodyMedium
                             )

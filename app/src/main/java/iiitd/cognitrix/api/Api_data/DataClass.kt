@@ -1,6 +1,15 @@
 package iiitd.cognitrix.api.Api_data
 
 data class LoginRequest(val email: String, val password: String)
+
+data class SignupRequest(
+    val fullName: String,
+    val email: String,
+    val password: String,
+    val phoneNumber: String,
+    val discordId: String,
+    val role: String
+)
 data class LoginResponse(val success: Boolean, val token: String?, val role: String, val verified: Boolean)
 
 data class StudentInfoResponse(

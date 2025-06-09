@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
@@ -56,6 +55,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import kotlin.system.exitProcess
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.core.net.toUri
 
 class Home {
@@ -151,34 +151,25 @@ class Home {
             topBar = {
                 TopAppBar(
                     title = {
-                        Box(
-                            modifier = Modifier.fillMaxHeight(), // Take full height to center vertically
-                            contentAlignment = Alignment.CenterStart // Center content vertically
-                        ) {
-                            Text(
-                                modifier = Modifier.padding(start = 2.dp),
-                                text = when (pagerState.currentPage) {
-                                    0 -> "My learnings"
-                                    1 -> "Leaderboard"
-                                    2 -> "My Profile"
-                                    else -> "My learnings"
-                                },
-                                color = MaterialTheme.colorScheme.onSurface,
-                                style = MaterialTheme.typography.headlineMedium
-                            )
-                        }
+                        Text(
+                            modifier = Modifier.padding(start = 2.dp),
+                            text = when (pagerState.currentPage) {
+                                0 -> "My learnings"
+                                1 -> "Leaderboard"
+                                2 -> "My Profile"
+                                else -> "My learnings"
+                            },
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.headlineMedium
+                        )
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         titleContentColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    modifier = Modifier.height(80.dp),
                     actions = {
-                        Box(
-                            modifier = Modifier.fillMaxHeight(), // Take full height for vertical centering
-                            contentAlignment = Alignment.CenterEnd // Align icons to the end and center vertically
-                        ) {
-                            IconButton(onClick = {
+                        IconButton(
+                            onClick = {
                                 val intent = Intent(
                                     Intent.ACTION_VIEW,
                                     "https://forms.gle/Ldviece7SoKM751w7".toUri()
@@ -186,45 +177,43 @@ class Home {
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
                                 context.startActivity(intent)
-                            }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.report),
-                                    contentDescription = "Report Issues",
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                        }
-                        Box(
-                            modifier = Modifier.fillMaxHeight(), // Take full height for vertical centering
-                            contentAlignment = Alignment.CenterEnd // Align icons to the end and center vertically
+                            },
+                            modifier = Modifier.size(40.dp)
                         ) {
-                            IconButton(onClick = {
-                                val intent = Intent(context, ChatWebViewActivity::class.java).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
+                            Icon(
+                                painter = painterResource(id = R.drawable.report),
+                                contentDescription = "Report Issues",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                val intent =
+                                    Intent(context, ChatWebViewActivity::class.java).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
                                 context.startActivity(intent)
-                            }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.chatbot),
-                                    contentDescription = "Chat Assistant",
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                        }
-                        Box(
-                            modifier = Modifier.fillMaxHeight(),
-                            contentAlignment = Alignment.CenterEnd
+                            },
+                            modifier = Modifier.size(40.dp)
                         ) {
-                            IconButton(onClick = { isPopupVisible = true }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.logout),
-                                    contentDescription = "Logout",
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
+                            Icon(
+                                painter = painterResource(id = R.drawable.chatbot),
+                                contentDescription = "Chat Assistant",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = { isPopupVisible = true },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.logout),
+                                contentDescription = "Logout",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(28.dp)
+                            )
                         }
                     }
                 )

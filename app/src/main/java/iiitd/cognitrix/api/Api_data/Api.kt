@@ -25,6 +25,9 @@ interface ApiService {
     @POST("api/auth/login")
     fun login(@Body request: LoginRequest): Call<LoginResponse>
 
+    @POST("api/auth/signup")
+    fun signup(@Body request: SignupRequest): Call<LoginResponse>
+
     @GET("api/student")
     fun getStudentInfo(): Call<StudentInfoResponse>
 

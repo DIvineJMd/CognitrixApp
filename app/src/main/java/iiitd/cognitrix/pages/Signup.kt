@@ -1,84 +1,51 @@
 package iiitd.cognitrix.pages
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.mutableStateOf
-
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.rounded.Email
-import androidx.compose.material.icons.sharp.Lock
-import androidx.compose.material.icons.twotone.Email
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import android.content.Context
-import android.widget.Toast
-import androidx.compose.foundation.gestures.rememberScrollableState
-import androidx.compose.foundation.gestures.scrollable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import iiitd.cognitrix.R
-import iiitd.cognitrix.pages.InputField
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-
+import iiitd.cognitrix.api.Api_data.LoginViewModel
+import iiitd.cognitrix.api.Api_data.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignUpPage(navController: NavController) {
+fun SignUpPage(navController: NavController, viewModel: LoginViewModel) {
     Scaffold(topBar = {}) {
         var fullName by rememberSaveable { mutableStateOf("") }
         var email by rememberSaveable { mutableStateOf("") }
         var password by rememberSaveable { mutableStateOf("") }
         var phoneNumber by rememberSaveable { mutableStateOf("") }
         var discordId by rememberSaveable { mutableStateOf("") }
-        var isStudent by rememberSaveable { mutableStateOf(true) } // Toggle state for Student/Professor
+        var isStudent by rememberSaveable { mutableStateOf(true) }
+
+        // Error states for validation
+        var fullNameError by rememberSaveable { mutableStateOf("") }
+        var emailError by rememberSaveable { mutableStateOf("") }
+        var passwordError by rememberSaveable { mutableStateOf("") }
+
         val context = LocalContext.current
-        val coroutineScope = rememberCoroutineScope()
+
+        val signupState by viewModel.signupState.collectAsState()
 
         Column(
             modifier = Modifier
@@ -152,39 +119,50 @@ fun SignUpPage(navController: NavController) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-//                     Full Name Input
-                    InputField(
+                    InputFieldWithError(
                         heading = "Full Name",
                         showAsterisk = true,
                         icon = R.drawable.profile_outline,
                         placeholder = "Enter Full Name",
                         input = fullName,
-                        onInputChange = { fullName = it }
+                        onInputChange = {
+                            fullName = it
+                            fullNameError = ""
+                        },
+                        errorMessage = fullNameError
                     )
-                    InputField(
+                    InputFieldWithError(
                         heading = "Email",
                         showAsterisk = true,
                         icon = R.drawable.mail,
                         placeholder = "Enter Email",
                         input = email,
-                        onInputChange = { email = it }
+                        onInputChange = {
+                            email = it
+                            emailError = ""
+                        },
+                        errorMessage = emailError
                     )
-                    InputField(
+                    InputFieldWithError(
                         heading = "Password",
                         showAsterisk = true,
                         icon = R.drawable.lock,
                         placeholder = "Enter Password",
                         input = password,
-                        onInputChange = { password = it }
+                        onInputChange = {
+                            password = it
+                            passwordError = ""
+                        },
+                        errorMessage = passwordError
                     )
                     Text(
                         text = "Your Password must be at least 8 characters long.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .align(Alignment.Start)
+                        modifier = Modifier.align(Alignment.Start)
                     )
-                    InputField(
+
+                    iiitd.cognitrix.pages.InputField(
                         heading = "Phone Number",
                         showAsterisk = false,
                         icon = R.drawable.phone,
@@ -192,7 +170,7 @@ fun SignUpPage(navController: NavController) {
                         input = phoneNumber,
                         onInputChange = { phoneNumber = it }
                     )
-                    InputField(
+                    iiitd.cognitrix.pages.InputField(
                         heading = "Discord ID",
                         showAsterisk = false,
                         icon = R.drawable.discord,
@@ -201,21 +179,84 @@ fun SignUpPage(navController: NavController) {
                         onInputChange = { discordId = it }
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    // Sign Up state handling
+                    when (signupState) {
+                        is Resource.Idle -> {
+                            // Show nothing when in idle state
+                        }
+                        is Resource.Loading -> {
+                            Row(
+                                modifier = Modifier.padding(top = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Creating Account...",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                        is Resource.Success<*> -> {
+                            Text(
+                                text = (signupState as Resource.Success<String>).data,
+                                modifier = Modifier.padding(top = 16.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            // Navigate to login after successful signup
+                            LaunchedEffect(signupState) {
+                                navController.navigate("login")
+                            }
+                        }
+                        is Resource.Error -> {
+                            LaunchedEffect(signupState) {
+                                Toast.makeText(context, "Signup Failed", Toast.LENGTH_SHORT).show()
+                            }
+                            val errorMessage = (signupState as Resource.Error).message
+                            Text(
+                                text = errorMessage,
+                                color = Color.Red,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(top = 16.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
 
                     // Sign Up button
                     Button(
                         onClick = {
-                            coroutineScope.launch {
-                                signUp(
+                            // Validate required fields
+                            var hasError = false
+
+                            if (fullName.isBlank()) {
+                                fullNameError = "Name is required"
+                                hasError = true
+                            }
+
+                            if (email.isBlank()) {
+                                emailError = "Email is required"
+                                hasError = true
+                            }
+
+                            if (password.isBlank()) {
+                                passwordError = "Password is required"
+                                hasError = true
+                            } else if (password.length < 8) {
+                                passwordError = "Password must be at least 8 characters long"
+                                hasError = true
+                            }
+
+                            // Only proceed if no validation errors
+                            if (!hasError) {
+                                viewModel.signup(
                                     fullName = fullName,
                                     email = email,
                                     password = password,
                                     phoneNumber = phoneNumber,
                                     discordId = discordId,
-                                    role = if (isStudent) "student" else "professor",
-                                    context = context,
-                                    navController=navController
+                                    role = if (isStudent) "student" else "professor"
                                 )
                             }
                         },
@@ -223,7 +264,8 @@ fun SignUpPage(navController: NavController) {
                             .fillMaxWidth()
                             .padding(top = 16.dp, bottom = 8.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
+                        enabled = signupState !is Resource.Loading
                     ) {
                         Text("Sign Up",
                             color= MaterialTheme.colorScheme.onSurface,
@@ -250,7 +292,7 @@ fun SignUpPage(navController: NavController) {
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier
                                 .clickable {
-                                    navController.navigate("login") // Navigate on click
+                                    navController.navigate("login")
                                 }
                         )
                     }
@@ -260,55 +302,98 @@ fun SignUpPage(navController: NavController) {
     }
 }
 
-fun signUp(
-    fullName: String,
-    email: String,
-    password: String,
-    phoneNumber: String,
-    discordId: String,
-    role: String,
-    context: Context,
-    navController: NavController
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun InputFieldWithError(
+    heading: String,
+    showAsterisk: Boolean,
+    icon: Int,
+    placeholder: String,
+    input: String,
+    onInputChange: (String) -> Unit,
+    errorMessage: String = ""
 ) {
-    val url = "https://szuumq8b3e.execute-api.ap-south-1.amazonaws.com/prod/api/auth/signup"
-    val client = OkHttpClient()
-
-    val json = JSONObject().apply {
-        put("fullName", fullName)
-        put("email", email)
-        put("password", password)
-        put("phoneNumber", phoneNumber)
-        put("discordId", discordId)
-        put("role", role)
-    }
-
-    // Create JSON request body
-    val requestBody = json.toString().toRequestBody("application/json".toMediaTypeOrNull())
-    val request = Request.Builder()
-        .url(url)
-        .post(requestBody)
-        .build()
-
-    CoroutineScope(Dispatchers.IO).launch {
-        try {
-            client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    val responseBody = response.body?.string() // Accessing response body
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "User created successfully", Toast.LENGTH_LONG).show()
-                        navController.navigate("login")
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        println(response.message)
-                        Toast.makeText(context, "Sign up failed: ${response.message}", Toast.LENGTH_LONG).show()
+    var passwordVisible by remember { mutableStateOf(false) }
+    Column {
+        Text(
+            text = buildAnnotatedString {
+                withStyle(
+                    style = MaterialTheme.typography.titleMedium.toSpanStyle()
+                        .copy(color = MaterialTheme.colorScheme.primary)
+                ) {
+                    append(heading)
+                }
+                if (showAsterisk) {
+                    withStyle(
+                        style = MaterialTheme.typography.titleMedium.toSpanStyle()
+                            .copy(color = Color.Red)
+                    ) {
+                        append("*")
                     }
                 }
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-            }
+            },
+            modifier = Modifier
+                .padding(top = 24.dp, bottom = 8.dp)
+                .align(Alignment.Start)
+        )
+
+        TextField(
+            value = input,
+            onValueChange = onInputChange,
+            placeholder = {
+                Text(
+                    placeholder,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(8.dp)
+                ),
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(id = icon),
+                    contentDescription = "Icon",
+                    tint = if (errorMessage.isNotEmpty()) Color.Red else MaterialTheme.colorScheme.primary
+                )
+            },
+            trailingIcon = if (heading == "Password") {
+                {
+                    Icon(
+                        painter = painterResource(id = if (passwordVisible) R.drawable.visibility_on else R.drawable.visibility_off),
+                        contentDescription = if (passwordVisible) "Hide Password" else "Show Password",
+                        modifier = Modifier.clickable { passwordVisible = !passwordVisible },
+                        tint = if (errorMessage.isNotEmpty()) Color.Red else MaterialTheme.colorScheme.primary
+                    )
+                }
+            } else null,
+            visualTransformation = if (heading == "Password" && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+            colors = TextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.primary,
+                unfocusedTextColor = MaterialTheme.colorScheme.primary,
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                cursorColor = MaterialTheme.colorScheme.primary,
+                focusedIndicatorColor = if (errorMessage.isNotEmpty()) Color.Red else Color.Transparent,
+                unfocusedIndicatorColor = if (errorMessage.isNotEmpty()) Color.Red else Color.Transparent,
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.primary
+            ),
+            isError = errorMessage.isNotEmpty()
+        )
+
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
         }
     }
 }
