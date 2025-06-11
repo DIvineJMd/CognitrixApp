@@ -142,6 +142,7 @@ fun LoginPage(viewModel: LoginViewModel,context:Context,navController: NavContro
                         onInputChange = { password = it }
                     )
 
+                    Spacer(modifier = Modifier.height(24.dp))
                     // Forgot password text
 //                    Row(
 //                        modifier = Modifier.fillMaxWidth(),
@@ -165,7 +166,6 @@ fun LoginPage(viewModel: LoginViewModel,context:Context,navController: NavContro
                         }
                         is Resource.Loading -> {
                             Row(
-                                modifier = Modifier.padding(top = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -179,7 +179,6 @@ fun LoginPage(viewModel: LoginViewModel,context:Context,navController: NavContro
                         is Resource.Success<*> -> {
                             Text(
                                 text = (loginState as Resource.Success<String>).data,
-                                modifier = Modifier.padding(top = 16.dp),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -201,7 +200,6 @@ fun LoginPage(viewModel: LoginViewModel,context:Context,navController: NavContro
                                 text = errorMessage,
                                 color = Color.Red,
                                 fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(top = 16.dp),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -214,7 +212,7 @@ fun LoginPage(viewModel: LoginViewModel,context:Context,navController: NavContro
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 16.dp, bottom = 8.dp),
+                            .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                         enabled = loginState !is Resource.Loading

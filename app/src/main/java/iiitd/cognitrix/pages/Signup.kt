@@ -179,6 +179,7 @@ fun SignUpPage(navController: NavController, viewModel: LoginViewModel) {
                         onInputChange = { discordId = it }
                     )
 
+                    Spacer(modifier = Modifier.height(24.dp))
                     // Sign Up state handling
                     when (signupState) {
                         is Resource.Idle -> {
@@ -186,7 +187,6 @@ fun SignUpPage(navController: NavController, viewModel: LoginViewModel) {
                         }
                         is Resource.Loading -> {
                             Row(
-                                modifier = Modifier.padding(top = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -200,7 +200,6 @@ fun SignUpPage(navController: NavController, viewModel: LoginViewModel) {
                         is Resource.Success<*> -> {
                             Text(
                                 text = (signupState as Resource.Success<String>).data,
-                                modifier = Modifier.padding(top = 16.dp),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -218,7 +217,6 @@ fun SignUpPage(navController: NavController, viewModel: LoginViewModel) {
                                 text = errorMessage,
                                 color = Color.Red,
                                 fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(top = 16.dp),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -262,7 +260,7 @@ fun SignUpPage(navController: NavController, viewModel: LoginViewModel) {
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 16.dp, bottom = 8.dp),
+                            .padding(vertical= 8.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                         enabled = signupState !is Resource.Loading

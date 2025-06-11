@@ -9,11 +9,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -31,6 +37,10 @@ import androidx.navigation.NavHostController
 import iiitd.cognitrix.api.Dataload.CourseViewModel
 import iiitd.cognitrix.api.Dataload.LeaderData
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import iiitd.cognitrix.R
 import iiitd.cognitrix.ui.theme.bronze
 import iiitd.cognitrix.ui.theme.gold
@@ -38,6 +48,7 @@ import iiitd.cognitrix.ui.theme.silver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.draw.shadow
 import iiitd.cognitrix.api.Api_data.LoginViewModel
+import kotlinx.coroutines.launch
 
 class Leaderboard {
 
@@ -259,7 +270,7 @@ class Leaderboard {
                                                 text = record.rank.toString(),
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.secondary
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
                                         }
                                     }
@@ -269,7 +280,7 @@ class Leaderboard {
                                     text = record.fullName,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.weight(4f),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -285,7 +296,7 @@ class Leaderboard {
                                         text = "${record.coins} ",
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.secondary
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                     Icon(
                                         painter = painterResource(R.drawable.coin),
@@ -388,9 +399,6 @@ class Leaderboard {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-//                .shadow(
-//                    elevation = 4.dp,
-//                    shape = RoundedCornerShape(4.dp))
                 .padding(vertical = 8.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -406,110 +414,198 @@ class Leaderboard {
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.secondary
                 )
 
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp)
-                ) {
-                    items(topUsers) { user ->
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .width(80.dp)
-                                .clickable { onUserClick(user) }
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                // Profile Image - remove gradient border for top 3
-                                Box(
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.tertiary),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.AccountCircle,
-                                        contentDescription = "User Avatar",
-                                        modifier = Modifier.size(32.dp),
-                                        tint = MaterialTheme.colorScheme.onTertiary
-                                    )
-                                }
+                // Create scroll state for LazyRow
+                val coroutineScope = rememberCoroutineScope()
+                val listState = rememberLazyListState()
+                val canScrollLeft = remember {
+                    derivedStateOf {
+                        listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
+                    }
+                }.value
+                val canScrollRight = remember {
+                    derivedStateOf {
+                        val layoutInfo = listState.layoutInfo
+                        val lastVisibleItemIndex =
+                            layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                        lastVisibleItemIndex < topUsers.size - 1
+                    }
+                }.value
 
-                                // Medal for top 3, rank badge for others
-                                if (user.rank <= 3) {
-                                    val medalResource = when (user.rank) {
-                                        1 -> R.drawable.gold
-                                        2 -> R.drawable.silver
-                                        3 -> R.drawable.bronze
-                                        else -> R.drawable.coin// fallback, shouldn't happen
-                                    }
-
-                                    Icon(
-                                        painter = painterResource(medalResource),
-                                        contentDescription = "Medal",
-                                        modifier = Modifier
-                                            .size(28.dp)
-                                            .align(Alignment.BottomEnd),
-                                        tint = Color.Unspecified
-                                    )
-                                } else {
-                                    // Rank Badge for positions beyond top 3
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        state = listState,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        items(topUsers) { user ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .clickable { onUserClick(user) }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    // Profile Image - remove gradient border for top 3
                                     Box(
                                         modifier = Modifier
-                                            .size(24.dp)
+                                            .size(64.dp)
                                             .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primary)
-                                            .align(Alignment.BottomEnd),
+                                            .background(MaterialTheme.colorScheme.tertiary),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(
-                                            text = "${user.rank}",
-                                            color = MaterialTheme.colorScheme.background,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp
+                                        Icon(
+                                            imageVector = Icons.Filled.AccountCircle,
+                                            contentDescription = "User Avatar",
+                                            modifier = Modifier.size(32.dp),
+                                            tint = MaterialTheme.colorScheme.onTertiary
                                         )
                                     }
+
+                                    // Medal for top 3, rank badge for others
+                                    if (user.rank <= 3) {
+                                        val medalResource = when (user.rank) {
+                                            1 -> R.drawable.gold
+                                            2 -> R.drawable.silver
+                                            3 -> R.drawable.bronze
+                                            else -> R.drawable.coin// fallback, shouldn't happen
+                                        }
+
+                                        Icon(
+                                            painter = painterResource(medalResource),
+                                            contentDescription = "Medal",
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .align(Alignment.BottomEnd),
+                                            tint = Color.Unspecified
+                                        )
+                                    } else {
+                                        // Rank Badge for positions beyond top 3
+                                        Box(
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.primary)
+                                                .align(Alignment.BottomEnd),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "${user.rank}",
+                                                color = MaterialTheme.colorScheme.background,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // User Name
+                                Text(
+                                    text = user.fullName,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 2.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                // Coin Count
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = "${user.coins} ",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                    Icon(
+                                        painter = painterResource(R.drawable.coin),
+                                        contentDescription = "Coin",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = Color.Unspecified
+                                    )
                                 }
                             }
+                        }
+                    }
 
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // User Name
-                            Text(
-                                text = user.fullName,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                textAlign = TextAlign.Center,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 2.dp)
+                    // Left scroll indicator
+                    if (canScrollLeft) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .padding(start = 8.dp)
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                )
+                                .clickable {
+                                    coroutineScope.launch {
+                                        val currentIndex = listState.firstVisibleItemIndex
+                                        val visibleItemsCount =
+                                            listState.layoutInfo.visibleItemsInfo.size
+                                        val newIndex =
+                                            (currentIndex - visibleItemsCount + 1).coerceAtLeast(0)
+                                        listState.animateScrollToItem(newIndex)
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = "Scroll Left",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(20.dp)
                             )
+                        }
+                    }
 
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            // Coin Count
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = "${user.coins} ",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.secondary,
+                    // Right scroll indicator
+                    if (canScrollRight) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 8.dp)
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
                                 )
-                                Icon(
-                                    painter = painterResource(R.drawable.coin),
-                                    contentDescription = "Coin",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = Color.Unspecified
-                                )
-                            }
+                                .clickable {
+                                    coroutineScope.launch {
+                                        val currentIndex = listState.firstVisibleItemIndex
+                                        val visibleItemsCount =
+                                            listState.layoutInfo.visibleItemsInfo.size
+                                        val newIndex =
+                                            (currentIndex + visibleItemsCount - 1).coerceAtMost(
+                                                topUsers.size - 1
+                                            )
+                                        listState.animateScrollToItem(newIndex)
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Scroll Right",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                     }
                 }
