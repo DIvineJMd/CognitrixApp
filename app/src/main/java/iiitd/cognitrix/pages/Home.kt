@@ -66,7 +66,7 @@ class Home {
         val pagerState = rememberPagerState(pageCount = { 3 })
         val coroutineScope = rememberCoroutineScope()
         val sharedPref = context.getSharedPreferences("AppData", Context.MODE_PRIVATE)
-        val fullName = sharedPref.getString("fullName", null)
+//        val fullName = sharedPref.getString("fullName", null)
         var isPopupVisible by rememberSaveable { mutableStateOf(false) }
         val sheetState = rememberModalBottomSheetState()
 
