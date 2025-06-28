@@ -14,7 +14,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
@@ -22,8 +21,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
@@ -36,9 +33,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -47,19 +44,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.draw.shadow
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import iiitd.cognitrix.R
 import iiitd.cognitrix.api.Api_data.LoginViewModel
 import iiitd.cognitrix.api.Dataload.CourseViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import androidx.core.content.edit
 import kotlin.system.exitProcess
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.core.net.toUri
 
 class Home {
-    @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
+    @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun HomeScreen(
@@ -76,7 +71,7 @@ class Home {
         val sheetState = rememberModalBottomSheetState()
 
         // Back press handling variables
-        var backPressedTime by remember { mutableStateOf(0L) }
+        var backPressedTime by remember { mutableLongStateOf(0L) }
         var showExitToast by remember { mutableStateOf(false) }
 
         // Handle back press
@@ -105,46 +100,46 @@ class Home {
 
         Scaffold(
             bottomBar = {
-                BottomAppBar(
-                    modifier = Modifier
-                        .height(68.dp)
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp)
-                        ),
-                    containerColor = MaterialTheme.colorScheme.background,
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                Column {
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    BottomAppBar(
+                        modifier = Modifier.height(68.dp),
+                        containerColor = MaterialTheme.colorScheme.background,
+                        contentPadding = PaddingValues(0.dp)
                     ) {
-                        NavigationBox(
-                            pagerState,
-                            coroutineScope,
-                            0,
-                            R.drawable.home_filled,
-                            R.drawable.home_outline,
-                            "Home"
-                        )
-                        NavigationBox(
-                            pagerState,
-                            coroutineScope,
-                            1,
-                            R.drawable.leaderboard_filled,
-                            R.drawable.leaderboard_outline,
-                            "Rank"
-                        )
-                        NavigationBox(
-                            pagerState,
-                            coroutineScope,
-                            2,
-                            R.drawable.profile_filled,
-                            R.drawable.profile_outline,
-                            "Profile"
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            NavigationBox(
+                                pagerState,
+                                coroutineScope,
+                                0,
+                                R.drawable.home_filled,
+                                R.drawable.home_outline,
+                                "Home"
+                            )
+                            NavigationBox(
+                                pagerState,
+                                coroutineScope,
+                                1,
+                                R.drawable.leaderboard_filled,
+                                R.drawable.leaderboard_outline,
+                                "Rank"
+                            )
+                            NavigationBox(
+                                pagerState,
+                                coroutineScope,
+                                2,
+                                R.drawable.profile_filled,
+                                R.drawable.profile_outline,
+                                "Profile"
+                            )
+                        }
                     }
                 }
             },
@@ -168,52 +163,57 @@ class Home {
                         titleContentColor = MaterialTheme.colorScheme.onSurface
                     ),
                     actions = {
-                        IconButton(
-                            onClick = {
-                                val intent = Intent(
-                                    Intent.ACTION_VIEW,
-                                    "https://forms.gle/Ldviece7SoKM751w7".toUri()
-                                ).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(intent)
-                            },
-                            modifier = Modifier.size(40.dp)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.report),
-                                contentDescription = "Report Issues",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                val intent =
-                                    Intent(context, ChatWebViewActivity::class.java).apply {
+                            IconButton(
+                                onClick = {
+                                    val intent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        "https://forms.gle/Ldviece7SoKM751w7".toUri()
+                                    ).apply {
                                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                     }
-                                context.startActivity(intent)
-                            },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.chatbot),
-                                contentDescription = "Chat Assistant",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        IconButton(
-                            onClick = { isPopupVisible = true },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.logout),
-                                contentDescription = "Logout",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(28.dp)
-                            )
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.report),
+                                    contentDescription = "Report Issues",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    val intent =
+                                        Intent(context, ChatWebViewActivity::class.java).apply {
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.chatbot),
+                                    contentDescription = "Chat Assistant",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                            IconButton(
+                                onClick = { isPopupVisible = true },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.logout),
+                                    contentDescription = "Logout",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
                         }
                     }
                 )
@@ -321,6 +321,7 @@ class Home {
             }
         }
     }
+
     @Composable
     fun HomeScreen(
         modifier: Modifier = Modifier,
@@ -413,7 +414,7 @@ class Home {
                                 isEnrollable = true,
                                 onClick = {
 //                                    navController.navigate("video")
-                                          }
+                                }
                                 ,
                                 onEnroll = {
                                     courseViewModel.enrollInCourse(
@@ -512,7 +513,6 @@ class Home {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun EnhancedCourseCard(
         courseTitle: String,
@@ -711,6 +711,4 @@ class Home {
             }
         }
     }
-
-
 }
