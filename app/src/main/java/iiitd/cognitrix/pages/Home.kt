@@ -103,6 +103,7 @@ class Home {
                 Column {
                     HorizontalDivider(
                         thickness = 1.dp,
+                        modifier = Modifier.padding(bottom = 2.dp),
                         color = MaterialTheme.colorScheme.tertiary
                     )
                     BottomAppBar(
